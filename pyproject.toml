@@ -12,7 +12,3 @@ dependencies = [
 [tool.uv.sources]
 mailman = { path = "postbot" }
 mmbot-framework = { path = "mmbot_framework" }
-
-
-
-
