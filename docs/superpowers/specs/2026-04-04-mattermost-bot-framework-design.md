@@ -17,6 +17,7 @@ organisation's monorepo. It provides:
 - A command dispatcher supporting both decorator and class-based registration
 - An async middleware pipeline for cross-cutting concerns (logging, auth, rate limiting, etc.)
 - Built-in optional middlewares (`LoggingMiddleware`, `IgnoreSelfMiddleware`)
+- TTL-based session management with automatic background cleanup
 - Structured logging throughout, configurable per-bot
 - Full unit test coverage
 
@@ -41,7 +42,8 @@ mmbot_framework/
 ├── core/
 │   ├── __init__.py
 │   ├── bot.py               # BaseBot class + lifecycle hooks
-│   └── driver.py            # Driver initialisation helper
+│   ├── driver.py            # Driver initialisation helper
+│   └── session.py           # SessionManager + Session dataclass + TTL cleanup
 ├── routing/
 │   ├── __init__.py
 │   └── dispatcher.py        # CommandDispatcher + @command decorator
@@ -54,7 +56,8 @@ tests/
     ├── test_config.py
     ├── test_bot.py
     ├── test_dispatcher.py
-    └── test_middleware.py
+    ├── test_middleware.py
+    └── test_session.py
 ```
 
 ---
@@ -74,6 +77,8 @@ tests/
 | `port` | `int` | no | `443` | Server port |
 | `log_level` | `str` | no | `"INFO"` | Root log level |
 | `log_file` | `str \| None` | no | `None` | Path for file logging; `None` = console only |
+| `session_ttl_seconds` | `int` | no | `3600` | Seconds before an inactive session expires |
+| `session_cleanup_interval_seconds` | `int` | no | `300` | How often the background cleanup task runs |
 
 Missing required fields raise `ConfigError` with a clear message naming the missing field.
 
@@ -157,7 +162,77 @@ await bot.reply(msg, "Your message here")
 
 ---
 
-## Section 3: Routing Layer
+## Section 3: Session Layer
+
+### `core/session.py`
+
+`SessionManager` holds per-user conversation state keyed by `sender_id`. It is owned by
+`BaseBot` and exposed as `self.sessions`.
+
+**`Session` dataclass:**
+
+```python
+@dataclass
+class Session:
+    sender_id: str
+    data: dict          # arbitrary bot-specific state, bot manages its own keys
+    created_at: float   # time.time() at creation
+    last_active: float  # updated on every access via get() / get_or_create()
+    ttl_seconds: int    # copied from BotConfig at creation time
+```
+
+**`SessionManager` API:**
+
+```python
+# Returns the live session, or None if expired / never created.
+# Updates last_active on access.
+session = bot.sessions.get(sender_id)
+
+# Returns an existing live session, or creates a fresh one.
+# If a session exists but has expired, it is cleared first and a new one is returned.
+session = bot.sessions.get_or_create(sender_id)
+
+# Explicitly delete a session (e.g. after a confirmed action).
+bot.sessions.clear(sender_id)
+
+# Check expiry without touching last_active.
+is_alive = bot.sessions.is_alive(sender_id)
+```
+
+**TTL semantics:** A session is considered expired when
+`time.time() - session.last_active > session.ttl_seconds`. Expiry is checked lazily on
+`get()` / `get_or_create()` and eagerly by the background cleanup task.
+
+**Background cleanup:** `BaseBot.run()` starts a `session_cleanup_task()` coroutine that
+runs every `config.session_cleanup_interval_seconds`. It iterates all sessions, removes
+expired ones, and logs each removal at INFO level.
+
+**Usage example:**
+
+```python
+class MyBot(BaseBot):
+    @command("!start")
+    async def start(self, msg: ParsedMessage) -> None:
+        session = self.sessions.get_or_create(msg.sender_id)
+        session.data["step"] = "awaiting_input"
+        await self.reply(msg, "Session started. What would you like to do?")
+
+    @command("!cancel")
+    async def cancel(self, msg: ParsedMessage) -> None:
+        self.sessions.clear(msg.sender_id)
+        await self.reply(msg, "Session cancelled.")
+
+    async def on_message(self, msg: ParsedMessage) -> None:
+        session = self.sessions.get(msg.sender_id)
+        if session is None:
+            await self.reply(msg, "No active session. Use !start to begin.")
+            return
+        # continue multi-step flow using session.data
+```
+
+---
+
+## Section 4: Routing Layer
 
 ### `routing/dispatcher.py`
 
@@ -251,6 +326,8 @@ bot.add_middleware(LoggingMiddleware())
 - `ParsedMessage` fixtures are constructed directly for dispatcher and middleware tests.
 - Config tests cover all three file formats, auto-detection order, and missing-field errors.
 - Lifecycle hook tests verify call order using async mocks.
+- Session tests cover TTL expiry, `get` vs `get_or_create` semantics, manual `clear`, and
+  background cleanup task behaviour (using `unittest.mock` to control `time.time`).
 
 ---
 
