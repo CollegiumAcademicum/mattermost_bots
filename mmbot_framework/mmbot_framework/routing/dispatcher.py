@@ -1,0 +1,105 @@
+"""Command routing — maps trigger strings to async handler functions."""
+
+from __future__ import annotations
+
+import logging
+from typing import TYPE_CHECKING, Awaitable, Callable
+
+if TYPE_CHECKING:
+    from mmbot_framework.core.message import ParsedMessage
+
+logger = logging.getLogger(__name__)
+
+Handler = Callable[..., Awaitable[None]]
+
+
+def command(trigger: str) -> Callable[[Handler], Handler]:
+    """Class-level decorator that registers a method as a command handler.
+
+    Use this inside a :class:`BaseBot` subclass to define commands::
+
+        class MyBot(BaseBot):
+            @command("!help")
+            async def help_handler(self, msg: ParsedMessage) -> None:
+                await self.reply(msg, "Help text here...")
+
+    :class:`BaseBot` discovers these methods in ``__init__`` and registers
+    them automatically with its :class:`CommandDispatcher`.
+
+    Args:
+        trigger: Prefix to match (case-insensitive ``startswith``).
+
+    Returns:
+        The original method unchanged. The trigger is attached as
+        ``method._command_trigger``.
+    """
+
+    def decorator(fn: Handler) -> Handler:
+        fn._command_trigger = trigger  # type: ignore[attr-defined]
+        return fn
+
+    return decorator
+
+
+class CommandDispatcher:
+    """Routes incoming messages to registered async handler functions.
+
+    Matching uses ``msg.text.lower().startswith(trigger)`` checked in
+    registration order. The first match wins.
+
+    Can be used standalone or via :class:`BaseBot`::
+
+        dispatcher = CommandDispatcher()
+        dispatcher.register("!ping", ping_handler)
+        matched = await dispatcher.dispatch(msg)
+    """
+
+    def __init__(self) -> None:
+        self._commands: list[tuple[str, Handler]] = []
+        self._default: Handler | None = None
+
+    def register(self, trigger: str, handler: Handler) -> None:
+        """Register *handler* for messages starting with *trigger*.
+
+        Args:
+            trigger: Prefix string (case-insensitive).
+            handler: Async callable ``(msg: ParsedMessage) -> None``.
+        """
+        logger.debug("Registering command handler for trigger %r.", trigger)
+        self._commands.append((trigger.lower(), handler))
+
+    def set_default(self, handler: Handler) -> None:
+        """Set the fallback handler invoked when no command matches.
+
+        Equivalent to overriding :meth:`BaseBot.on_message`.
+
+        Args:
+            handler: Async callable ``(msg: ParsedMessage) -> None``.
+        """
+        self._default = handler
+
+    async def dispatch(self, msg: ParsedMessage) -> bool:
+        """Dispatch *msg* to the first matching handler.
+
+        Args:
+            msg: The parsed incoming message.
+
+        Returns:
+            ``True`` if a handler (or the default) was invoked,
+            ``False`` if no command matched and no default is set.
+        """
+        text_lower = msg.text.lower()
+
+        for trigger, handler in self._commands:
+            if text_lower.startswith(trigger):
+                logger.debug("Matched trigger %r for message %r.", trigger, msg.text[:50])
+                await handler(msg)
+                return True
+
+        if self._default is not None:
+            logger.debug("No command matched; invoking default handler.")
+            await self._default(msg)
+            return True
+
+        logger.debug("No command matched and no default handler registered.")
+        return False
