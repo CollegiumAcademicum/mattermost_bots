@@ -36,6 +36,7 @@ def test_botconfig_custom_values():
     assert config.scheme == "http"
     assert config.log_level == "DEBUG"   # normalised to upper
     assert config.session_ttl_seconds == 600
+    assert config.session_cleanup_interval_seconds == 60
 
 
 def test_botconfig_missing_url():
@@ -61,6 +62,16 @@ def test_botconfig_invalid_log_level():
 def test_botconfig_log_level_case_insensitive():
     config = BotConfig(**_valid_kwargs(), log_level="warning")
     assert config.log_level == "WARNING"
+
+
+def test_botconfig_invalid_port():
+    with pytest.raises(ValidationError):
+        BotConfig(**_valid_kwargs(), port=0)
+
+
+def test_botconfig_invalid_port_too_high():
+    with pytest.raises(ValidationError):
+        BotConfig(**_valid_kwargs(), port=99999)
 
 
 def test_config_error_is_exception():

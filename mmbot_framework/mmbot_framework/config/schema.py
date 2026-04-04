@@ -36,6 +36,13 @@ class BotConfig(BaseModel):
     session_ttl_seconds: int = 3600
     session_cleanup_interval_seconds: int = 300
 
+    @field_validator("port")
+    @classmethod
+    def _validate_port(cls, value: int) -> int:
+        if not 1 <= value <= 65535:
+            raise ValueError(f"port must be between 1 and 65535, got {value}")
+        return value
+
     @field_validator("log_level")
     @classmethod
     def _validate_log_level(cls, value: str) -> str:
