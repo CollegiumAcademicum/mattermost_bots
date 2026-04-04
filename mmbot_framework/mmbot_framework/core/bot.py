@@ -166,11 +166,10 @@ class BaseBot:
     # ── Helper ───────────────────────────────────────────────────────────────
 
     async def reply(self, msg: ParsedMessage, text: str) -> None:
-        """Send *text* to the channel the message came from.
+        """Post *text* back to the channel *msg* came from.
 
-        Args:
-            msg: The incoming message to reply to.
-            text: The reply text.
+        ``mattermostdriver`` is synchronous; ``async def`` is used so callers
+        can ``await`` this method uniformly.
         """
         self.driver.posts.create_post({"channel_id": msg.channel_id, "message": text})
 
@@ -183,10 +182,11 @@ class BaseBot:
 
         1. Configures logging from :attr:`config`.
         2. Calls ``driver.login()`` and fetches the bot's own user ID.
-        3. Awaits :meth:`on_start`.
-        4. Starts the background session cleanup task.
-        5. Opens the WebSocket listener (blocking).
-        6. On KeyboardInterrupt: awaits :meth:`on_stop` and shuts down cleanly.
+        3. Runs the async main loop which:
+           a. Awaits :meth:`on_start`.
+           b. Starts the background session cleanup task.
+           c. Opens the WebSocket listener (via executor so we stay in async context).
+        4. On KeyboardInterrupt: awaits :meth:`on_stop` and shuts down cleanly.
         """
         self._setup_logging()
         logger.info("Bot starting up.")
@@ -199,24 +199,45 @@ class BaseBot:
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
 
-        loop.run_until_complete(self.on_start())
-        loop.create_task(self._session_cleanup_loop())
+        try:
+            loop.run_until_complete(self._async_main(loop))
+        except KeyboardInterrupt:
+            pass
+        finally:
+            pending = asyncio.all_tasks(loop)
+            if pending:
+                loop.run_until_complete(asyncio.gather(*pending, return_exceptions=True))
+            loop.close()
+        logger.info("Bot shut down cleanly.")
 
-        async def _ws_handler(raw_msg: str | dict) -> None:
+    async def _async_main(self, loop: asyncio.AbstractEventLoop) -> None:
+        """Async entry point: lifecycle hooks, cleanup task, and WebSocket."""
+        await self.on_start()
+        cleanup_task = asyncio.create_task(self._session_cleanup_loop())
+
+        def _raw_ws_handler(raw_msg: str | dict) -> None:
             raw_str = raw_msg if isinstance(raw_msg, str) else json.dumps(raw_msg)
             msg = ParsedMessage.from_raw(raw_str)
             if msg is not None:
-                await self._pipeline.run(msg, self._dispatch)
+                asyncio.run_coroutine_threadsafe(
+                    self._pipeline.run(msg, self._dispatch), loop
+                )
 
         try:
             logger.info("Opening WebSocket. Press Ctrl+C to stop.")
-            self.driver.init_websocket(_ws_handler)
-        except KeyboardInterrupt:
+            await loop.run_in_executor(
+                None,
+                lambda: self.driver.init_websocket(_raw_ws_handler),
+            )
+        except (KeyboardInterrupt, asyncio.CancelledError):
             logger.info("Interrupted. Shutting down.")
         finally:
-            loop.run_until_complete(self.on_stop())
-            loop.close()
-            logger.info("Bot shut down cleanly.")
+            cleanup_task.cancel()
+            try:
+                await cleanup_task
+            except asyncio.CancelledError:
+                pass
+            await self.on_stop()
 
     # ── Internal helpers ─────────────────────────────────────────────────────
 
