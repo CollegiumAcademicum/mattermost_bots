@@ -20,9 +20,9 @@ class MiddlewarePipeline:
 
     Each middleware has the signature::
 
-        async def my_middleware(msg: ParsedMessage, next: Callable) -> None:
+        async def my_middleware(msg: ParsedMessage, call_next: Callable) -> None:
             # pre-processing
-            await next(msg)   # forward to the next middleware or endpoint
+            await call_next(msg)   # forward to the next middleware or endpoint
             # post-processing (optional)
 
     Not calling ``next`` **short-circuits** the chain — no further middleware
@@ -45,7 +45,7 @@ class MiddlewarePipeline:
         Middleware is executed in the order it is added.
 
         Args:
-            middleware: Async callable ``(msg, next) -> None``.
+            middleware: Async callable ``(msg, call_next) -> None``.
         """
         self._middlewares.append(middleware)
 
@@ -80,7 +80,7 @@ class LoggingMiddleware:
         bot.add_middleware(LoggingMiddleware())
     """
 
-    async def __call__(self, msg: ParsedMessage, next: Callable) -> None:
+    async def __call__(self, msg: ParsedMessage, call_next: Callable) -> None:
         logger.debug(
             "Incoming message — sender=%s channel=%s (%s): %.100r",
             msg.sender_name,
@@ -88,7 +88,7 @@ class LoggingMiddleware:
             msg.channel_type,
             msg.text,
         )
-        await next(msg)
+        await call_next(msg)
 
 
 class IgnoreSelfMiddleware:
@@ -110,8 +110,8 @@ class IgnoreSelfMiddleware:
         """
         self._bot = bot
 
-    async def __call__(self, msg: ParsedMessage, next: Callable) -> None:
+    async def __call__(self, msg: ParsedMessage, call_next: Callable) -> None:
         if self._bot._bot_id is not None and msg.sender_id == self._bot._bot_id:
             logger.debug("Dropping message from self (bot_id=%s).", self._bot._bot_id)
             return
-        await next(msg)
+        await call_next(msg)

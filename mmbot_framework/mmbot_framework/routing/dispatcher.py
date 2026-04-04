@@ -14,24 +14,22 @@ Handler = Callable[..., Awaitable[None]]
 
 
 def command(trigger: str) -> Callable[[Handler], Handler]:
-    """Class-level decorator that registers a method as a command handler.
+    """Marks a method as a command handler by attaching its trigger string.
 
-    Use this inside a :class:`BaseBot` subclass to define commands::
+    Use this inside a :class:`BaseBot` subclass. :class:`BaseBot` discovers
+    marked methods in ``__init__`` and registers them with its dispatcher
+    automatically::
 
         class MyBot(BaseBot):
             @command("!help")
             async def help_handler(self, msg: ParsedMessage) -> None:
                 await self.reply(msg, "Help text here...")
 
-    :class:`BaseBot` discovers these methods in ``__init__`` and registers
-    them automatically with its :class:`CommandDispatcher`.
-
     Args:
         trigger: Prefix to match (case-insensitive ``startswith``).
 
     Returns:
-        The original method unchanged. The trigger is attached as
-        ``method._command_trigger``.
+        The original method unchanged, with ``_command_trigger`` set to *trigger*.
     """
 
     def decorator(fn: Handler) -> Handler:
