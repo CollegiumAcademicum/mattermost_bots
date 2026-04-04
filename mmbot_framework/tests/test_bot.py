@@ -134,3 +134,51 @@ async def test_dispatch_falls_through_to_on_message():
 
     await bot._dispatch(_msg("unmatched"))
     assert received == ["unmatched"]
+
+
+def test_lifecycle_on_start_called_before_websocket():
+    """on_start must be awaited before init_websocket is called."""
+    call_order = []
+
+    class OrderBot(BaseBot):
+        async def on_start(self):
+            call_order.append("on_start")
+
+    with patch("mmbot_framework.core.bot.DriverFactory") as mock_factory:
+        mock_driver = MagicMock()
+        mock_factory.create.return_value = mock_driver
+
+        def fake_websocket(handler):
+            call_order.append("websocket")
+
+        mock_driver.init_websocket.side_effect = fake_websocket
+
+        bot = OrderBot(_config())
+        bot.driver = mock_driver
+        bot.run()
+
+    assert call_order.index("on_start") < call_order.index("websocket")
+
+
+def test_lifecycle_on_stop_always_called():
+    """on_stop must be called even if KeyboardInterrupt terminates the WebSocket."""
+    on_stop_called = []
+
+    class StopBot(BaseBot):
+        async def on_stop(self):
+            on_stop_called.append(True)
+
+    with patch("mmbot_framework.core.bot.DriverFactory") as mock_factory:
+        mock_driver = MagicMock()
+        mock_factory.create.return_value = mock_driver
+
+        def raise_keyboard_interrupt(handler):
+            raise KeyboardInterrupt
+
+        mock_driver.init_websocket.side_effect = raise_keyboard_interrupt
+
+        bot = StopBot(_config())
+        bot.driver = mock_driver
+        bot.run()
+
+    assert on_stop_called == [True]

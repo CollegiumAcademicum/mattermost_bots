@@ -202,8 +202,9 @@ class BaseBot:
         try:
             loop.run_until_complete(self._async_main())
         except KeyboardInterrupt:
-            pass
+            logger.info("Shutdown requested.")
         finally:
+            loop.run_until_complete(self.on_stop())   # always called here
             pending = asyncio.all_tasks(loop)
             if pending:
                 results = loop.run_until_complete(asyncio.gather(*pending, return_exceptions=True))
@@ -240,7 +241,7 @@ class BaseBot:
                 await cleanup_task
             except asyncio.CancelledError:
                 pass
-            await self.on_stop()
+            # on_stop() is called by run()
 
     # ── Internal helpers ─────────────────────────────────────────────────────
 
