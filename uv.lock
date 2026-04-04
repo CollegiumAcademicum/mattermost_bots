@@ -196,10 +196,14 @@ version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
     { name = "mailman" },
+    { name = "mmbot-framework" },
 ]
 
 [package.metadata]
-requires-dist = [{ name = "mailman", directory = "postbot" }]
+requires-dist = [
+    { name = "mailman", directory = "postbot" },
+    { name = "mmbot-framework", directory = "mmbot_framework" },
+]
 
 [[package]]
 name = "mattermostdriver"
@@ -213,6 +217,26 @@ sdist = { url = "https://files.pythonhosted.org/packages/b7/01/3a62b245848e95eda
 wheels = [
     { url = "https://files.pythonhosted.org/packages/16/2b/c03ca96c2870c2e28e5407303ee6c23c14db748b6e97646a10368061371e/mattermostdriver-7.3.2-py3-none-any.whl", hash = "sha256:8c6f15da34873b6c88da8fa8da0342f94bef77fcd16294befd92fea7e008cd97", size = 25087, upload-time = "2022-01-21T14:24:03.369Z" },
 ]
+
+[[package]]
+name = "mmbot-framework"
+version = "0.1.0"
+source = { directory = "mmbot_framework" }
+dependencies = [
+    { name = "mattermostdriver" },
+    { name = "pydantic" },
+    { name = "python-dotenv" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "mattermostdriver", specifier = ">=7.3.2" },
+    { name = "pydantic", specifier = ">=2.0.0" },
+    { name = "pytest", marker = "extra == 'dev'", specifier = ">=7.0" },
+    { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=0.23" },
+    { name = "python-dotenv", specifier = ">=1.0.0" },
+]
+provides-extras = ["dev"]
 
 [[package]]
 name = "packaging"
