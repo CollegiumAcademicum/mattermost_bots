@@ -200,17 +200,20 @@ class BaseBot:
         asyncio.set_event_loop(loop)
 
         try:
-            loop.run_until_complete(self._async_main(loop))
+            loop.run_until_complete(self._async_main())
         except KeyboardInterrupt:
             pass
         finally:
             pending = asyncio.all_tasks(loop)
             if pending:
-                loop.run_until_complete(asyncio.gather(*pending, return_exceptions=True))
+                results = loop.run_until_complete(asyncio.gather(*pending, return_exceptions=True))
+                for result in results:
+                    if isinstance(result, Exception) and not isinstance(result, asyncio.CancelledError):
+                        logger.warning("Pending task raised during shutdown: %r", result)
             loop.close()
         logger.info("Bot shut down cleanly.")
 
-    async def _async_main(self, loop: asyncio.AbstractEventLoop) -> None:
+    async def _async_main(self) -> None:
         """Async entry point: lifecycle hooks, cleanup task, and WebSocket."""
         await self.on_start()
         cleanup_task = asyncio.create_task(self._session_cleanup_loop())
@@ -220,12 +223,12 @@ class BaseBot:
             msg = ParsedMessage.from_raw(raw_str)
             if msg is not None:
                 asyncio.run_coroutine_threadsafe(
-                    self._pipeline.run(msg, self._dispatch), loop
+                    self._pipeline.run(msg, self._dispatch), asyncio.get_running_loop()
                 )
 
         try:
             logger.info("Opening WebSocket. Press Ctrl+C to stop.")
-            await loop.run_in_executor(
+            await asyncio.get_running_loop().run_in_executor(
                 None,
                 lambda: self.driver.init_websocket(_raw_ws_handler),
             )
