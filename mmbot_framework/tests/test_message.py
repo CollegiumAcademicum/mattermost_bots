@@ -94,3 +94,30 @@ def test_from_raw_preserves_raw_payload():
     msg = ParsedMessage.from_raw(raw)
     assert msg is not None
     assert msg.raw == json.loads(raw)
+
+
+def test_from_raw_sender_name_without_at_prefix():
+    """sender_name with no @ should be left unchanged."""
+    msg = ParsedMessage.from_raw(_make_raw(sender_name="carol"))
+    assert msg is not None
+    assert msg.sender_name == "carol"
+
+
+def test_from_raw_sender_name_double_at_strips_only_one():
+    """Only the first @ should be stripped (removeprefix, not lstrip)."""
+    msg = ParsedMessage.from_raw(_make_raw(sender_name="@@dave"))
+    assert msg is not None
+    assert msg.sender_name == "@dave"
+
+
+def test_from_raw_returns_none_for_malformed_post_json():
+    """Malformed inner post JSON should return None."""
+    raw = json.dumps({
+        "event": "posted",
+        "data": {
+            "post": "not valid json",
+            "channel_type": "D",
+            "sender_name": "@alice",
+        },
+    })
+    assert ParsedMessage.from_raw(raw) is None

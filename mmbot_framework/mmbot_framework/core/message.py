@@ -72,7 +72,7 @@ class ParsedMessage:
 
         return cls(
             sender_id=sender_id,
-            sender_name=data.get("sender_name", "").lstrip("@"),
+            sender_name=data.get("sender_name", "").removeprefix("@"),
             channel_id=channel_id,
             channel_type=data.get("channel_type", ""),
             text=post.get("message", "").strip(),
