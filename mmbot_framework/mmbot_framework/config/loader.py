@@ -56,7 +56,7 @@ class ConfigLoader:
         if not p.exists():
             raise ConfigError(f"Config file not found: {p}")
 
-        logger.debug("Loading config from %s", p)
+        logger.debug(f"Loading config from {p}")
 
         suffix = p.suffix.lower()
 
@@ -92,11 +92,12 @@ class ConfigLoader:
             ConfigError: If no recognised config file exists in the directory.
         """
         search_dir = Path(directory) if directory else Path.cwd()
+        logger.debug(f"Automatically searching for config file in {search_dir}")
 
         for name in _AUTO_DETECT_ORDER:
             candidate = search_dir / name
             if candidate.exists():
-                logger.info("Auto-detected config file: %s", candidate)
+                logger.info(f"Auto-detected config file: {candidate}")
                 return cls.from_file(candidate)
 
         raise ConfigError(

@@ -133,7 +133,9 @@ class BaseBot:
 
         Middleware is executed in the order it is added, before the dispatcher.
         Each middleware has the signature ``async (msg, call_next) -> None``.
-        Not calling ``call_next`` short-circuits the chain.
+        Not calling ``call_next`` short-circuits the chain. (this could be
+        used intentionally when you want to drop messages silently. e.g. when
+        the caller has reached its message quota)
 
         Args:
             middleware: Async callable ``(msg: ParsedMessage, call_next: Callable) -> None``.
@@ -194,7 +196,7 @@ class BaseBot:
         self.driver.login()
         me = self.driver.users.get_user("me")
         self._bot_id = me["id"]
-        logger.info("Logged in as %s (id=%s).", me.get("username"), self._bot_id)
+        logger.info(f"Logged in as {me.get("username")} (id={self._bot_id}).")
 
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
@@ -210,7 +212,7 @@ class BaseBot:
                 results = loop.run_until_complete(asyncio.gather(*pending, return_exceptions=True))
                 for result in results:
                     if isinstance(result, Exception) and not isinstance(result, asyncio.CancelledError):
-                        logger.warning("Pending task raised during shutdown: %r", result)
+                        logger.warning(f"Pending task raised during shutdown: {result}")
             loop.close()
         logger.info("Bot shut down cleanly.")
 
@@ -258,7 +260,7 @@ class BaseBot:
             await asyncio.sleep(interval)
             count = self.sessions.purge_expired()
             if count:
-                logger.info("Session cleanup: removed %d expired session(s).", count)
+                logger.info(f"Session cleanup: removed {count} expired session(s).")
 
     def _setup_logging(self) -> None:
         """Configure the root logger from :attr:`config`."""
@@ -279,7 +281,5 @@ class BaseBot:
             force=True,
         )
         logger.debug(
-            "Logging configured — level=%s file=%s",
-            self.config.log_level,
-            self.config.log_file,
+            f"Logging configured — level={self.config.log_level} file={self.config.log_file}"
         )
