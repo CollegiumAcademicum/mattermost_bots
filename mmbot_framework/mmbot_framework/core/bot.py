@@ -224,7 +224,8 @@ class BaseBot:
         # Capture the main loop here so both closures below can reference it.
         main_loop = asyncio.get_running_loop()
 
-        def _raw_ws_handler(raw_msg: str | dict) -> None:
+        async def _raw_ws_handler(raw_msg: str | dict) -> None:
+            # mattermostdriver awaits this function, so it must be async.
             raw_str = raw_msg if isinstance(raw_msg, str) else json.dumps(raw_msg)
             msg = ParsedMessage.from_raw(raw_str)
             if msg is not None:
