@@ -221,35 +221,22 @@ class BaseBot:
         await self.on_start()
         cleanup_task = asyncio.create_task(self._session_cleanup_loop())
 
-        # Capture the main loop here so both closures below can reference it.
-        main_loop = asyncio.get_running_loop()
-
         async def _raw_ws_handler(raw_msg: str | dict) -> None:
-            # mattermostdriver awaits this function, so it must be async.
             raw_str = raw_msg if isinstance(raw_msg, str) else json.dumps(raw_msg)
             msg = ParsedMessage.from_raw(raw_str)
             if msg is not None:
-                # Schedule the coroutine on the main loop from the WS thread.
-                asyncio.run_coroutine_threadsafe(
-                    self._pipeline.run(msg, self._dispatch), main_loop
-                )
+                await self._pipeline.run(msg, self._dispatch)
 
-        def _run_websocket() -> None:
-            # mattermostdriver calls asyncio.get_event_loop() and then
-            # loop.run_until_complete() on it. We must NOT give it the main
-            # loop (already running) — create a fresh one for this thread
-            # instead. Incoming message callbacks reach back to the main loop
-            # via run_coroutine_threadsafe (captured above).
-            ws_loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(ws_loop)
-            try:
-                self.driver.init_websocket(_raw_ws_handler)
-            finally:
-                ws_loop.close()
+        # mattermostdriver.Driver.init_websocket() is a synchronous wrapper that
+        # calls loop.run_until_complete() — incompatible with an already-running
+        # loop. Bypass it and await the underlying async coroutine directly.
+        from mattermostdriver.websocket import Websocket  # noqa: PLC0415
+
+        self.driver.websocket = Websocket(self.driver.options, self.driver.client.token)
 
         try:
             logger.info("Opening WebSocket. Press Ctrl+C to stop.")
-            await main_loop.run_in_executor(None, _run_websocket)
+            await self.driver.websocket.connect(_raw_ws_handler)
         except (KeyboardInterrupt, asyncio.CancelledError):
             logger.info("Interrupted. Shutting down.")
         finally:
