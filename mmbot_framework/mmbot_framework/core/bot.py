@@ -221,25 +221,33 @@ class BaseBot:
         await self.on_start()
         cleanup_task = asyncio.create_task(self._session_cleanup_loop())
 
+        # Capture the main loop here so both closures below can reference it.
+        main_loop = asyncio.get_running_loop()
+
         def _raw_ws_handler(raw_msg: str | dict) -> None:
             raw_str = raw_msg if isinstance(raw_msg, str) else json.dumps(raw_msg)
             msg = ParsedMessage.from_raw(raw_str)
             if msg is not None:
+                # Schedule the coroutine on the main loop from the WS thread.
                 asyncio.run_coroutine_threadsafe(
-                    self._pipeline.run(msg, self._dispatch), asyncio.get_running_loop()
+                    self._pipeline.run(msg, self._dispatch), main_loop
                 )
+
+        def _run_websocket() -> None:
+            # mattermostdriver calls asyncio.get_event_loop() and then
+            # loop.run_until_complete() on it. We must NOT give it the main
+            # loop (already running) — create a fresh one for this thread
+            # instead. Incoming message callbacks reach back to the main loop
+            # via run_coroutine_threadsafe (captured above).
+            ws_loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(ws_loop)
+            try:
+                self.driver.init_websocket(_raw_ws_handler)
+            finally:
+                ws_loop.close()
 
         try:
             logger.info("Opening WebSocket. Press Ctrl+C to stop.")
-            main_loop = asyncio.get_running_loop()
-
-            def _run_websocket() -> None:
-                # mattermostdriver calls asyncio.get_event_loop() internally; the
-                # thread-pool thread has no event loop set in Python 3.10+, so we
-                # bind the main loop to this thread before handing off to the driver.
-                asyncio.set_event_loop(main_loop)
-                self.driver.init_websocket(_raw_ws_handler)
-
             await main_loop.run_in_executor(None, _run_websocket)
         except (KeyboardInterrupt, asyncio.CancelledError):
             logger.info("Interrupted. Shutting down.")
