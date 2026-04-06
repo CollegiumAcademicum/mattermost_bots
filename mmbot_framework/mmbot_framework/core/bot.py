@@ -231,10 +231,16 @@ class BaseBot:
 
         try:
             logger.info("Opening WebSocket. Press Ctrl+C to stop.")
-            await asyncio.get_running_loop().run_in_executor(
-                None,
-                lambda: self.driver.init_websocket(_raw_ws_handler),
-            )
+            main_loop = asyncio.get_running_loop()
+
+            def _run_websocket() -> None:
+                # mattermostdriver calls asyncio.get_event_loop() internally; the
+                # thread-pool thread has no event loop set in Python 3.10+, so we
+                # bind the main loop to this thread before handing off to the driver.
+                asyncio.set_event_loop(main_loop)
+                self.driver.init_websocket(_raw_ws_handler)
+
+            await main_loop.run_in_executor(None, _run_websocket)
         except (KeyboardInterrupt, asyncio.CancelledError):
             logger.info("Interrupted. Shutting down.")
         finally:
