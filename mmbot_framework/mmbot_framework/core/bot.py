@@ -205,10 +205,13 @@ class BaseBot:
             loop.run_until_complete(self._async_main())
         except KeyboardInterrupt:
             logger.info("Shutdown requested.")
-        finally:
+        finally: # TODO check why the postbot bot doesnt shut down completely. only the db closes connection
+            logging.debug("on_stop() starting.")
             loop.run_until_complete(self.on_stop())   # always called here
+            logging.debug("on_stop() complete. Shutting down event loop.")
             pending = asyncio.all_tasks(loop)
             if pending:
+                logging.debug(f"Pending tasks: {pending}")
                 results = loop.run_until_complete(asyncio.gather(*pending, return_exceptions=True))
                 for result in results:
                     if isinstance(result, Exception) and not isinstance(result, asyncio.CancelledError):
@@ -240,6 +243,7 @@ class BaseBot:
         except (KeyboardInterrupt, asyncio.CancelledError):
             logger.info("Interrupted. Shutting down.")
         finally:
+            logger.debug("cancelling cleanup_task")
             cleanup_task.cancel()
             try:
                 await cleanup_task
