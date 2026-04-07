@@ -212,6 +212,8 @@ class BaseBot:
             pending = asyncio.all_tasks(loop)
             if pending:
                 logging.debug(f"Pending tasks: {pending}")
+                for task in pending:
+                    task.cancel()
                 results = loop.run_until_complete(asyncio.gather(*pending, return_exceptions=True))
                 for result in results:
                     if isinstance(result, Exception) and not isinstance(result, asyncio.CancelledError):
