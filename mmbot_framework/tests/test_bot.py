@@ -182,3 +182,32 @@ def test_lifecycle_on_stop_always_called():
         bot.run()
 
     assert on_stop_called == [True]
+
+
+def test_bot_exposes_cache():
+    """BaseBot.__init__ must create a CacheManager instance."""
+    from mmbot_framework.core.cache import CacheManager
+    bot = _make_bot()
+    assert isinstance(bot.cache, CacheManager)
+
+
+async def test_cache_refresh_loop_calls_refresh_stale():
+    """_cache_refresh_loop must call cache.refresh_stale after each sleep interval."""
+    bot = _make_bot()
+    bot.cache.refresh_stale = AsyncMock()
+
+    call_count = 0
+
+    async def fake_sleep(_n: float) -> None:
+        nonlocal call_count
+        call_count += 1
+        if call_count >= 2:
+            raise asyncio.CancelledError()
+
+    with patch("mmbot_framework.core.bot.asyncio.sleep", side_effect=fake_sleep):
+        try:
+            await bot._cache_refresh_loop()
+        except asyncio.CancelledError:
+            pass
+
+    bot.cache.refresh_stale.assert_awaited_once()

@@ -9,6 +9,7 @@ import logging.handlers
 from typing import Callable
 
 from mmbot_framework.config.schema import BotConfig
+from mmbot_framework.core.cache import CacheManager
 from mmbot_framework.core.driver import DriverFactory
 from mmbot_framework.core.message import ParsedMessage
 from mmbot_framework.core.session import SessionManager
@@ -79,6 +80,7 @@ class BaseBot:
         self._dispatcher = CommandDispatcher()
         self._pipeline = MiddlewarePipeline()
         self._bot_id: str | None = None
+        self.cache = CacheManager()
 
         # Discover class-level @command-decorated methods and register them.
         for name in dir(type(self)):
@@ -222,9 +224,10 @@ class BaseBot:
         logger.info("Bot shut down cleanly.")
 
     async def _async_main(self) -> None:
-        """Async entry point: lifecycle hooks, cleanup task, and WebSocket."""
+        """Async entry point: lifecycle hooks, cleanup task, cache task, and WebSocket."""
         await self.on_start()
         cleanup_task = asyncio.create_task(self._session_cleanup_loop())
+        cache_task = asyncio.create_task(self._cache_refresh_loop())
 
         async def _raw_ws_handler(raw_msg: str | dict) -> None:
             raw_str = raw_msg if isinstance(raw_msg, str) else json.dumps(raw_msg)
@@ -245,12 +248,14 @@ class BaseBot:
         except (KeyboardInterrupt, asyncio.CancelledError):
             logger.info("Interrupted. Shutting down.")
         finally:
-            logger.debug("cancelling cleanup_task")
+            logger.debug("Cancelling background tasks.")
             cleanup_task.cancel()
-            try:
-                await cleanup_task
-            except asyncio.CancelledError:
-                pass
+            cache_task.cancel()
+            for task in (cleanup_task, cache_task):
+                try:
+                    await task
+                except asyncio.CancelledError:
+                    pass
             # on_stop() is called by run()
 
     # ── Internal helpers ─────────────────────────────────────────────────────
@@ -269,6 +274,26 @@ class BaseBot:
             count = self.sessions.purge_expired()
             if count:
                 logger.info(f"Session cleanup: removed {count} expired session(s).")
+
+    async def _cache_refresh_loop(self) -> None:
+        """Background task: reload stale cache entries on a fixed interval.
+
+        Wakes every 60 seconds and calls
+        :meth:`~mmbot_framework.core.cache.CacheManager.refresh_stale`, which
+        reloads any named entry whose TTL has elapsed.  The 60-second poll
+        interval is a fixed internal constant; freshness is controlled by the
+        per-entry TTL set in :meth:`~mmbot_framework.core.cache.CacheManager.register`.
+
+        Loader exceptions are caught and logged so that a single failed refresh
+        does not terminate the loop.
+        """
+        from mmbot_framework.core.cache import _POLL_INTERVAL  # noqa: PLC0415
+        while True:
+            await asyncio.sleep(_POLL_INTERVAL)
+            try:
+                await self.cache.refresh_stale()
+            except Exception as exc:
+                logger.error(f"Cache refresh failed: {exc}")
 
     def _setup_logging(self) -> None:
         """Configure the root logger from :attr:`config`."""
