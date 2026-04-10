@@ -129,9 +129,12 @@ class CacheManager:
         if entry is None:
             raise KeyError(f"No cache entry registered for {name!r}.")
         logger.info(f"Refreshing cache entry {name!r}.")
+        start_timestamp = time.perf_counter()
         entry.data = await entry.loader()
+        end_timestamp = time.perf_counter()
         entry.loaded_at = time.time()
-        logger.debug(f"Cache entry {name!r} refreshed at {entry.loaded_at:.0f}.")
+
+        logger.debug(f"Cache entry {name!r} refreshed at {entry.loaded_at:.0f} (took {end_timestamp - start_timestamp:.2f}s).")
 
     async def refresh_stale(self) -> None:
         """Reload all entries whose TTL has elapsed (including never-loaded entries).
