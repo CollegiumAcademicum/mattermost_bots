@@ -9,7 +9,7 @@ import logging.handlers
 from typing import Callable
 
 from mmbot_framework.config.schema import BotConfig
-from mmbot_framework.core.cache import CacheManager
+from mmbot_framework.core.cache import CacheManager, _POLL_INTERVAL
 from mmbot_framework.core.driver import DriverFactory
 from mmbot_framework.core.message import ParsedMessage
 from mmbot_framework.core.session import SessionManager
@@ -189,7 +189,8 @@ class BaseBot:
         3. Runs the async main loop which:
            a. Awaits :meth:`on_start`.
            b. Starts the background session cleanup task.
-           c. Opens the WebSocket listener (via executor so we stay in async context).
+           c. Starts the background cache refresh task.
+           d. Opens the WebSocket listener (via executor so we stay in async context).
         4. On KeyboardInterrupt: awaits :meth:`on_stop` and shuts down cleanly.
         """
         self._setup_logging()
@@ -287,7 +288,6 @@ class BaseBot:
         Loader exceptions are caught and logged so that a single failed refresh
         does not terminate the loop.
         """
-        from mmbot_framework.core.cache import _POLL_INTERVAL  # noqa: PLC0415
         while True:
             await asyncio.sleep(_POLL_INTERVAL)
             try:
