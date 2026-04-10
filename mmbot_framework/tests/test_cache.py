@@ -63,7 +63,7 @@ class TestCacheManager:
         await cache.refresh_stale()
         loader.assert_awaited_once()
 
-    async def test_refresh_stale_skips_never_loaded_entries(self):
+    async def test_refresh_stale_refreshes_never_loaded_entries(self):
         """An entry that was never loaded (loaded_at=0) IS stale and gets refreshed."""
         cache = CacheManager()
         loader = AsyncMock(return_value="data")
