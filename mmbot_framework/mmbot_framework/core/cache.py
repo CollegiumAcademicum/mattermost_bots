@@ -140,6 +140,12 @@ class CacheManager:
         :class:`~mmbot_framework.BaseBot`.  An entry is stale when
         ``time.time() - loaded_at > ttl``; since ``loaded_at`` starts at
         ``0.0``, a never-loaded entry is always stale.
+
+        Raises:
+            Any exception raised by a loader propagates directly.  The caller
+            (typically the ``BaseBot`` background task) is responsible for
+            catching and logging errors so that a single failed refresh does
+            not terminate the loop.
         """
         now = time.time()
         for name, entry in list(self._entries.items()):
