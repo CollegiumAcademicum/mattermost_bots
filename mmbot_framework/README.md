@@ -279,6 +279,68 @@ class WizardBot(BaseBot):
 
 ---
 
+## Caching
+
+`BaseBot` exposes a `cache` attribute (`CacheManager`) for storing data that is
+expensive to fetch on every request.  Each named entry has an async **loader**
+callable and a **TTL**; a background task refreshes stale entries every 60 seconds.
+
+### Registering a cache entry
+
+Call `cache.register()` in `on_start()`, then `await cache.refresh()` to
+pre-warm the entry before the WebSocket opens:
+
+```python
+class MyBot(BaseBot):
+
+    async def on_start(self) -> None:
+        self.cache.register("users", self._load_users, ttl=300)
+        await self.cache.refresh("users")   # pre-warm at startup
+
+    async def _load_users(self) -> dict:
+        """Fetch all users and index them by ID."""
+        return {u["id"]: u for u in self.driver.users.get_users()}
+```
+
+### Reading cached data
+
+Use `cache.get(name)` inside command handlers.  It returns `None` if the entry
+has never been loaded:
+
+```python
+    @command("!whoami")
+    async def whoami(self, msg: ParsedMessage) -> None:
+        users = self.cache.get("users")
+        if users is None:
+            await self.reply(msg, "Cache not ready — try again shortly.")
+            return
+        name = users.get(msg.sender_id, {}).get("username", "unknown")
+        await self.reply(msg, f"You are @{name}")
+```
+
+### Forcing a refresh
+
+Call `await cache.refresh(name)` to reload a single entry immediately (e.g.
+from a `!refresh` command):
+
+```python
+    @command("!refresh_users")
+    async def refresh_users(self, msg: ParsedMessage) -> None:
+        await self.cache.refresh("users")
+        await self.reply(msg, "User cache refreshed.")
+```
+
+### CacheManager API
+
+| Method | Description |
+|---|---|
+| `register(name, loader, ttl)` | Register a named entry with an async loader and TTL (seconds). |
+| `get(name)` | Return cached data or `None` if not yet loaded. |
+| `refresh(name)` | Force-reload the named entry. Raises `KeyError` if not registered. |
+| `refresh_stale()` | Reload all entries whose TTL has elapsed. Called by the background task. |
+
+---
+
 ## Lifecycle hooks
 
 Override any of these async methods in your `BaseBot` subclass:
