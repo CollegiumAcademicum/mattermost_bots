@@ -1,6 +1,8 @@
 """Tests for BaseBot — command registration, reply, middleware wiring."""
 
 import asyncio
+import json
+import logging
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -32,6 +34,14 @@ def _make_bot(config: BotConfig | None = None) -> BaseBot:
     with patch("mmbot_framework.core.bot.DriverFactory") as MockFactory:
         MockFactory.create.return_value = MagicMock()
         bot = BaseBot(config or _config())
+    return bot
+
+
+def _make_bot_of_class(cls, config: BotConfig | None = None):
+    """Return an instance of *cls* (a BaseBot subclass) with a mocked Driver."""
+    with patch("mmbot_framework.core.bot.DriverFactory") as MockFactory:
+        MockFactory.create.return_value = MagicMock()
+        bot = cls(config or _config())
     return bot
 
 
@@ -144,17 +154,17 @@ def test_lifecycle_on_start_called_before_websocket():
         async def on_start(self):
             call_order.append("on_start")
 
-    with patch("mmbot_framework.core.bot.DriverFactory") as mock_factory:
-        mock_driver = MagicMock()
-        mock_factory.create.return_value = mock_driver
+    mock_ws = AsyncMock()
 
-        def fake_websocket(handler):
-            call_order.append("websocket")
+    async def fake_connect(handler):
+        call_order.append("websocket")
 
-        mock_driver.init_websocket.side_effect = fake_websocket
+    mock_ws.connect.side_effect = fake_connect
 
+    with patch("mmbot_framework.core.bot.DriverFactory") as mock_factory, \
+         patch("mattermostdriver.websocket.Websocket", return_value=mock_ws):
+        mock_factory.create.return_value = MagicMock()
         bot = OrderBot(_config())
-        bot.driver = mock_driver
         bot.run()
 
     assert call_order.index("on_start") < call_order.index("websocket")
@@ -168,17 +178,13 @@ def test_lifecycle_on_stop_always_called():
         async def on_stop(self):
             on_stop_called.append(True)
 
-    with patch("mmbot_framework.core.bot.DriverFactory") as mock_factory:
-        mock_driver = MagicMock()
-        mock_factory.create.return_value = mock_driver
+    mock_ws = AsyncMock()
+    mock_ws.connect.side_effect = KeyboardInterrupt
 
-        def raise_keyboard_interrupt(handler):
-            raise KeyboardInterrupt
-
-        mock_driver.init_websocket.side_effect = raise_keyboard_interrupt
-
+    with patch("mmbot_framework.core.bot.DriverFactory") as mock_factory, \
+         patch("mattermostdriver.websocket.Websocket", return_value=mock_ws):
+        mock_factory.create.return_value = MagicMock()
         bot = StopBot(_config())
-        bot.driver = mock_driver
         bot.run()
 
     assert on_stop_called == [True]
@@ -211,3 +217,83 @@ async def test_cache_refresh_loop_calls_refresh_stale():
             pass
 
     bot.cache.refresh_stale.assert_awaited_once()
+
+
+# ── _raw_ws_handler ──────────────────────────────────────────────────────────
+
+def _make_posted_raw(text: str) -> str:
+    """Return a minimal 'posted' WebSocket payload string."""
+    post = json.dumps({"user_id": "u1", "channel_id": "c1", "message": text, "file_ids": []})
+    return json.dumps({"event": "posted", "data": {"post": post, "sender_name": "@alice", "channel_type": "D"}})
+
+
+def _run_bot_with_ws_message(bot: BaseBot, raw_msg) -> None:
+    """Run bot.run() with a mock websocket that delivers one message then returns."""
+    mock_ws = AsyncMock()
+
+    async def fake_connect(handler):
+        await handler(raw_msg)
+
+    mock_ws.connect.side_effect = fake_connect
+
+    with patch("mattermostdriver.websocket.Websocket", return_value=mock_ws):
+        bot.run()
+
+
+def test_raw_ws_handler_dispatches_str_message():
+    """A str WebSocket payload is parsed and routed through the pipeline."""
+    received = []
+
+    class MyBot(BaseBot):
+        async def on_message(self, msg: ParsedMessage) -> None:
+            received.append(msg.text)
+
+    bot = _make_bot_of_class(MyBot)
+    _run_bot_with_ws_message(bot, _make_posted_raw("hello from str"))
+
+    assert received == ["hello from str"]
+
+
+def test_raw_ws_handler_dispatches_dict_message():
+    """A dict WebSocket payload is serialised to JSON before parsing."""
+    received = []
+
+    class MyBot(BaseBot):
+        async def on_message(self, msg: ParsedMessage) -> None:
+            received.append(msg.text)
+
+    bot = _make_bot_of_class(MyBot)
+    raw_dict = json.loads(_make_posted_raw("hello from dict"))  # same payload but as dict
+    _run_bot_with_ws_message(bot, raw_dict)
+
+    assert received == ["hello from dict"]
+
+
+def test_raw_ws_handler_ignores_non_posted_events():
+    """Non-'posted' WebSocket events are silently dropped."""
+    received = []
+
+    class MyBot(BaseBot):
+        async def on_message(self, msg: ParsedMessage) -> None:
+            received.append(msg.text)
+
+    bot = _make_bot_of_class(MyBot)
+    _run_bot_with_ws_message(bot, json.dumps({"event": "typing", "data": {}}))
+
+    assert received == []
+
+
+# ── _setup_logging ────────────────────────────────────────────────────────────
+
+def test_setup_logging_with_log_file_adds_rotating_handler(tmp_path):
+    """_setup_logging adds a RotatingFileHandler when log_file is configured."""
+    bot = _make_bot(_config(log_file=str(tmp_path / "bot.log")))
+    bot._setup_logging()
+    root_logger = logging.getLogger()
+    try:
+        handler_types = [type(h).__name__ for h in root_logger.handlers]
+        assert "RotatingFileHandler" in handler_types
+    finally:
+        for h in root_logger.handlers[:]:
+            h.close()
+            root_logger.removeHandler(h)

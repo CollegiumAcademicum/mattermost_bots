@@ -27,3 +27,8 @@ packages = ["mmbot_framework"]
 pythonpath = "."
 testpaths = ["tests"]
 asyncio_mode = "auto"
+
+[dependency-groups]
+dev = [
+    "pytest-cov>=7.1.0",
+]
