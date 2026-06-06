@@ -1,6 +1,3 @@
-[submodule "postbot"]
-	path = postbot
-	url = git@github.com:CollegiumAcademicum/mailman.git
 [submodule "old"]
 	path = old
 	url = git@github.com:CollegiumAcademicum/InstandhaltungsBot.git
