@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Confirm Broadcast{% endblock %}
+{% block content %}
+<h1>Confirm Broadcast</h1>
+
+<h2>Message</h2>
+<pre style="border:1px solid #ccc; padding:1em;">{{ message }}</pre>
+
+<h2>Target Channels ({{ resolved_names|length }})</h2>
+<ul>
+    {% for name in resolved_names %}
+        <li>{{ name }}</li>
+    {% empty %}
+        <li><em>No channels selected.</em></li>
+    {% endfor %}
+</ul>
+
+<form method="post">
+    {% csrf_token %}
+    <button type="submit" name="action" value="send">Send Broadcast</button>
+    &nbsp;
+    <button type="submit" name="action" value="back">Go Back</button>
+</form>
+{% endblock %}

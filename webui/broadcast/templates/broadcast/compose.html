@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Compose Broadcast{% endblock %}
+{% block content %}
+<h1>Compose Broadcast</h1>
+<form method="post">
+    {% csrf_token %}
+
+    <h2>Message</h2>
+    <textarea name="message" rows="8" cols="80" required>{{ request.session.broadcast_message|default:'' }}</textarea>
+
+    <h2>Groups</h2>
+    {% for group_name, channels in channels_data.groups.items %}
+        <label>
+            <input type="checkbox" name="groups" value="{{ group_name }}">
+            <strong>{{ group_name }}</strong> ({{ channels|length }} channels)
+        </label><br>
+    {% empty %}
+        <em>No groups available.</em>
+    {% endfor %}
+
+    {% if channels_data.private_groups %}
+    <h3>Private Groups</h3>
+    {% for group_name, channels in channels_data.private_groups.items %}
+        <label>
+            <input type="checkbox" name="groups" value="{{ group_name }}">
+            <strong>{{ group_name }}</strong> ({{ channels|length }} channels)
+        </label><br>
+    {% endfor %}
+    {% endif %}
+
+    <details>
+        <summary>Individual Channels</summary>
+        {% for ch in channels_data.individual_channels %}
+            <label>
+                <input type="checkbox" name="individual_channels" value="{{ ch.id }}">
+                {{ ch.display_name }}
+                {% if ch.display_name != ch.channel_name %}
+                    <small>({{ ch.channel_name }})</small>
+                {% endif %}
+            </label><br>
+        {% empty %}
+            <em>No individual channels available.</em>
+        {% endfor %}
+    </details>
+
+    <br>
+    <button type="submit">Preview &amp; Confirm</button>
+</form>
+{% endblock %}

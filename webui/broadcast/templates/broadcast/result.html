@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Broadcast Result{% endblock %}
+{% block content %}
+<h1>Broadcast Result</h1>
+
+{% if result.failed == 0 %}
+    <p>Sent successfully to {{ result.sent }} channel(s).</p>
+{% elif result.sent == 0 %}
+    <p>Broadcast failed - could not send to any channel.</p>
+    <ul>
+        {% for err in result.errors %}<li>{{ err }}</li>{% endfor %}
+    </ul>
+{% else %}
+    <p>Partially sent: {{ result.sent }} succeeded, {{ result.failed }} failed.</p>
+    <ul>
+        {% for err in result.errors %}<li>{{ err }}</li>{% endfor %}
+    </ul>
+{% endif %}
+
+<p><a href="{% url 'broadcast:compose' %}">Send Another Broadcast</a></p>
+{% endblock %}

@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Broadcast{% endblock %}</title>
+</head>
+<body>
+<nav>
+    {% if user.is_authenticated %}
+        Logged in as <strong>{{ user.username }}</strong>
+        &nbsp;|&nbsp;
+        <a href="{% url 'logout' %}">Logout</a>
+    {% endif %}
+</nav>
+<hr>
+{% if messages %}
+    {% for msg in messages %}
+        <div class="messages {{ msg.tags }}"><strong>{{ msg }}</strong></div>
+    {% endfor %}
+{% endif %}
+{% block content %}{% endblock %}
+</body>
+</html>
