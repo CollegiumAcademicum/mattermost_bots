@@ -2,10 +2,18 @@
 import os
 from pathlib import Path
 
+from django.core.exceptions import ImproperlyConfigured
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "insecure-dev-key-do-not-use-in-production")
+_INSECURE_KEY = "insecure-dev-key-do-not-use-in-production"
+SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", _INSECURE_KEY)
 DEBUG = os.environ.get("DEBUG", "false").lower() == "true"
+
+if not DEBUG and SECRET_KEY == _INSECURE_KEY:
+    raise ImproperlyConfigured(
+        "DJANGO_SECRET_KEY environment variable must be set in production (DEBUG=False)."
+    )
 ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
 
 INSTALLED_APPS = [
@@ -66,11 +74,6 @@ LOGIN_URL = "/login/"
 LOGIN_REDIRECT_URL = "/broadcast/"
 LOGOUT_REDIRECT_URL = "/login/"
 
-AUTHENTICATION_BACKENDS = [
-    "broadcast.auth.CustomLDAPBackend",
-    "django.contrib.auth.backends.ModelBackend",
-]
-
 # LDAP — configured via environment variables.
 try:
     import ldap
@@ -89,8 +92,14 @@ try:
         "last_name": "sn",
         "email": "mail",
     }
+    AUTHENTICATION_BACKENDS = [
+        "broadcast.auth.CustomLDAPBackend",
+        "django.contrib.auth.backends.ModelBackend",
+    ]
 except ImportError:
-    pass  # python-ldap not installed; LDAP auth will fail gracefully
+    AUTHENTICATION_BACKENDS = [
+        "django.contrib.auth.backends.ModelBackend",
+    ]
 
 # DN of the LDAP group whose members become "BotAdmins" in Django.
 LDAP_ADMIN_GROUP_DN = os.environ.get("LDAP_ADMIN_GROUP_DN", "")
