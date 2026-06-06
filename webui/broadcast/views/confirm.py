@@ -48,7 +48,12 @@ def confirm(request):
 
     selected_groups = request.session.get("broadcast_groups", [])
     selected_individual = request.session.get("broadcast_individual", [])
-    channels_data = get_channels()
+    try:
+        channels_data = get_channels()
+    except Exception as exc:
+        logger.error(f"Failed to load channels for confirm: {exc}")
+        messages.error(request, "Could not load channels. Please try composing again.")
+        return redirect("broadcast:compose")
     channel_ids, resolved_names = _resolve_channel_ids(
         selected_groups, selected_individual, channels_data
     )
