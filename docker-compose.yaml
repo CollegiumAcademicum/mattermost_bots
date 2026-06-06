@@ -1,0 +1,40 @@
+services:
+  postbot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      - MATTERMOST_URL
+      - BOT_TOKEN
+      - TEAM_NAME
+      - WEBUI_API_SECRET
+    volumes:
+      - ./channels.toml:/app/postbot/channels.toml:ro
+    networks:
+      - internal
+    restart: unless-stopped
+
+  webui:
+    build:
+      context: ./webui
+      dockerfile: Dockerfile
+    environment:
+      - DJANGO_SECRET_KEY
+      - LDAP_SERVER_URI
+      - LDAP_BIND_DN
+      - LDAP_BIND_PASSWORD
+      - LDAP_USER_SEARCH_BASE
+      - LDAP_ADMIN_GROUP_DN
+      - POSTBOT_API_URL=http://postbot:8000
+      - POSTBOT_API_SECRET=${WEBUI_API_SECRET}
+    ports:
+      - "8080:8080"
+    networks:
+      - internal
+    depends_on:
+      - postbot
+    restart: unless-stopped
+
+networks:
+  internal:
+    driver: bridge
