@@ -17,7 +17,7 @@ services:
       - BOT_LOG_CHANNEL_ID
       - DB_PATH
     volumes:
-      - ./channels.toml:/app/postbot/channels.toml:ro
+      - ./postbot/channels.toml:/app/channels.toml:ro
       - postbot_db:/app/db
       - postbot_logs:/app/logs
     networks:
