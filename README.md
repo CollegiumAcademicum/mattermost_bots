@@ -64,35 +64,11 @@ browser instead of via direct message to the bot.
 
 ### 1. Create a `.env` file
 
-Copy the template below and fill in every value marked `CHANGE_ME`:
-
-```dotenv
-# ── postbot ────────────────────────────────────────────────────────────────
-URL=mattermost.yourdomain.com             # hostname only, no https://
-TOKEN=CHANGE_ME                            # bot account access token
-TEAM_NAME=your-team-slug                   # Mattermost team slug
-
-# Shared secret between postbot and webui (any long random string)
-WEBUI_API_SECRET=CHANGE_ME
-
-# Optional postbot overrides (shown with defaults)
-SESSION_TTL_SECONDS=300
-CHANNEL_CACHE_TTL_SECONDS=3600
-LOG_LEVEL=INFO
-CONSOLE_LOG_LEVEL=WARNING
-BOT_LOG_CHANNEL_ID=                        # leave empty to disable audit posts
-
-# ── webui ──────────────────────────────────────────────────────────────────
-DJANGO_SECRET_KEY=CHANGE_ME                # long random string, keep secret
-ALLOWED_HOSTS=yourdomain.com,localhost     # comma-separated hostnames
-
-# LDAP (remove or leave empty to use local Django accounts only)
-LDAP_SERVER_URI=ldap://ldap.yourdomain.com
-LDAP_BIND_DN=cn=readonly,dc=example,dc=com
-LDAP_BIND_PASSWORD=CHANGE_ME
-LDAP_USER_SEARCH_BASE=ou=users,dc=example,dc=com
-LDAP_ADMIN_GROUP_DN=cn=bot-admins,ou=groups,dc=example,dc=com
+```bash
+cp .env.example .env
 ```
+
+Open `.env` and fill in the four values marked `CHANGE_ME`. All other settings have working defaults and inline comments.
 
 > **Security note:** Never commit `.env` to version control. It is listed in
 > `.dockerignore` and `.gitignore`.
