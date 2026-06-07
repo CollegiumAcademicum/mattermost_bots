@@ -4,6 +4,12 @@ WORKDIR /app
 
 RUN pip install uv
 
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    libldap-dev \
+    libsasl2-dev \
+    && rm -rf /var/lib/apt/lists/*
+
 COPY pyproject.toml .
 RUN uv sync --no-group dev
 
