@@ -447,3 +447,88 @@ class TestResolveTargets:
         assert "ch_id_1" in valid_ids
         assert "ch_id_2" in valid_ids
         assert "not-in-whitelist" in invalid
+
+
+# ---------------------------------------------------------------------------
+# _seed_data_files
+# ---------------------------------------------------------------------------
+
+
+class TestSeedDataFiles:
+    """Tests for PostBot._seed_data_files()."""
+
+    def _make_bot(self, tmp_path, **config_overrides):
+        defaults = dict(
+            url="mm.example.com",
+            token="test-token",
+            team_name="test-team",
+            db_path=tmp_path / "test.db",
+        )
+        defaults.update(config_overrides)
+        with patch("mmbot_framework.core.driver.DriverFactory.create", return_value=MagicMock()):
+            return PostBot(PostBotConfig(**defaults))
+
+    def test_seeds_channels_toml_when_absent(self, tmp_path):
+        """channels_toml_path is created from the bundled template if missing."""
+        target = tmp_path / "data" / "channels.toml"
+        bot = self._make_bot(tmp_path, channels_toml_path=target)
+
+        bot._seed_data_files()
+
+        assert target.exists()
+        template = Path(__file__).parent.parent / "channels.toml"
+        assert target.read_text(encoding="utf-8") == template.read_text(encoding="utf-8")
+
+    def test_seeds_scheduler_toml_when_absent(self, tmp_path):
+        """scheduler_toml_path is created from the bundled template if missing."""
+        channels_file = tmp_path / "channels.toml"
+        channels_file.write_text("[whitelist]\n[groups]\n[private_groups]\n")
+        target = tmp_path / "data" / "scheduler.toml"
+        bot = self._make_bot(
+            tmp_path,
+            channels_toml_path=channels_file,
+            scheduler_toml_path=target,
+        )
+
+        bot._seed_data_files()
+
+        assert target.exists()
+        template = Path(__file__).parent.parent / "scheduler.toml"
+        assert target.read_text(encoding="utf-8") == template.read_text(encoding="utf-8")
+
+    def test_does_not_overwrite_existing_channels_toml(self, tmp_path):
+        """An existing channels_toml_path is left untouched."""
+        target = tmp_path / "channels.toml"
+        original_content = "[whitelist]\n[groups]\n[private_groups]\n"
+        target.write_text(original_content)
+        bot = self._make_bot(tmp_path, channels_toml_path=target)
+
+        bot._seed_data_files()
+
+        assert target.read_text(encoding="utf-8") == original_content
+
+    def test_does_not_overwrite_existing_scheduler_toml(self, tmp_path):
+        """An existing scheduler_toml_path is left untouched."""
+        channels_file = tmp_path / "channels.toml"
+        channels_file.write_text("[whitelist]\n[groups]\n[private_groups]\n")
+        target = tmp_path / "scheduler.toml"
+        original_content = "[tasks]\n# custom schedule\n"
+        target.write_text(original_content)
+        bot = self._make_bot(
+            tmp_path,
+            channels_toml_path=channels_file,
+            scheduler_toml_path=target,
+        )
+
+        bot._seed_data_files()
+
+        assert target.read_text(encoding="utf-8") == original_content
+
+    def test_creates_parent_directories(self, tmp_path):
+        """Parent directories are created if they do not exist."""
+        target = tmp_path / "nested" / "deep" / "channels.toml"
+        bot = self._make_bot(tmp_path, channels_toml_path=target)
+
+        bot._seed_data_files()
+
+        assert target.exists()

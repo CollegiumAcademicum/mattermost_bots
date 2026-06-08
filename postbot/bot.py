@@ -16,6 +16,7 @@ Usage::
 from __future__ import annotations
 
 import asyncio
+import shutil
 import toml
 import json
 import logging
@@ -172,17 +173,39 @@ class PostBot(BaseBot):
 
     # ── Lifecycle hooks ──────────────────────────────────────────────────────
 
+    def _seed_data_files(self) -> None:
+        """Seed missing config files from bundled templates.
+
+        Called at the start of :meth:`on_start` before any file is read.
+        For each of ``channels_toml_path`` and ``scheduler_toml_path``: if the
+        configured path does not exist, the corresponding template bundled in
+        the package directory is copied there.  Parent directories are created
+        as needed.  Existing files are never overwritten.
+        """
+        templates_dir = Path(__file__).parent
+        seeds = [
+            (self.config.channels_toml_path, templates_dir / "channels.toml"),
+            (self.config.scheduler_toml_path, templates_dir / "scheduler.toml"),
+        ]
+        for target, template in seeds:
+            if not target.exists():
+                target.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(template, target)
+                logger.info(f"Seeded {target} from bundled template {template}.")
+
     async def on_start(self) -> None:
         """Run setup tasks after driver login, before the WebSocket opens.
 
         Steps:
         1. Apply the SSL patch required by the installed mattermostdriver version.
-        2. Initialise the SQLite broadcast-log database.
-        3. Fetch the bot's Mattermost team ID and username.
-        4. Load channel group definitions from the channels TOML file.
-        5. Register and pre-warm the channel cache.
+        2. Seed missing data files from bundled templates.
+        3. Initialise the SQLite broadcast-log database.
+        4. Fetch the bot's Mattermost team ID and username.
+        5. Load channel group definitions from the channels TOML file.
+        6. Register and pre-warm the channel cache.
         """
         apply_ssl_patch()
+        self._seed_data_files()
         initialize_database(self.config.db_path)
 
         me = self.driver.users.get_user("me")
@@ -551,7 +574,7 @@ class PostBot(BaseBot):
         Usage: ``!add_group {"GroupName": ["channel_id_1", "channel_id_2"]}``
 
         Invalid channel IDs are removed silently.  Groups where every ID is
-        invalid are not added.  Valid groups are persisted to ``channels.json``
+        invalid are not added.  Valid groups are persisted to ``channels.toml``
         and the in-memory state is updated immediately.
 
         Args:
