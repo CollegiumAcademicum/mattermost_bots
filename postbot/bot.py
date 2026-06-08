@@ -189,6 +189,11 @@ class PostBot(BaseBot):
         ]
         for target, template in seeds:
             if not target.exists():
+                if not template.exists():
+                    raise FileNotFoundError(
+                        f"Bundled template {template} is missing from the package. "
+                        "Ensure the template files are included in the container image."
+                    )
                 target.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copy2(template, target)
                 logger.info(f"Seeded {target} from bundled template {template}.")
