@@ -526,9 +526,30 @@ class TestSeedDataFiles:
 
     def test_creates_parent_directories(self, tmp_path):
         """Parent directories are created if they do not exist."""
-        target = tmp_path / "nested" / "deep" / "channels.toml"
-        bot = self._make_bot(tmp_path, channels_toml_path=target)
+        channels_target = tmp_path / "nested" / "deep" / "channels.toml"
+        scheduler_target = tmp_path / "other" / "path" / "scheduler.toml"
+        bot = self._make_bot(
+            tmp_path,
+            channels_toml_path=channels_target,
+            scheduler_toml_path=scheduler_target,
+        )
 
         bot._seed_data_files()
 
-        assert target.exists()
+        assert channels_target.exists()
+        assert scheduler_target.exists()
+
+    def test_raises_if_bundled_template_missing(self, tmp_path, monkeypatch):
+        """FileNotFoundError with a clear message if the bundled template is absent."""
+        import bot as bot_module
+
+        target = tmp_path / "data" / "channels.toml"
+        bot = self._make_bot(tmp_path, channels_toml_path=target)
+
+        # Point templates_dir to an empty directory so no templates exist there
+        empty_dir = tmp_path / "empty_templates"
+        empty_dir.mkdir()
+        monkeypatch.setattr(bot_module, "__file__", str(empty_dir / "bot.py"))
+
+        with pytest.raises(FileNotFoundError, match="Bundled template"):
+            bot._seed_data_files()

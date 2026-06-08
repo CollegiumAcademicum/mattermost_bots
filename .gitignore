@@ -63,6 +63,7 @@ db.sqlite3-journal
 
 # Postbot runtime data
 data/*.db
+data/*.toml
 
 # Flask stuff:
 instance/
