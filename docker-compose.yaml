@@ -15,10 +15,11 @@ services:
       - CONSOLE_LOG_LEVEL
       - LOG_FILE
       - BOT_LOG_CHANNEL_ID
-      - DB_PATH
+      - CHANNELS_TOML_PATH=/app/data/channels.toml
+      - DB_PATH=/app/data/broadcast_log.db
+      - SCHEDULER_TOML_PATH=/app/data/scheduler.toml
     volumes:
-      - ./postbot/channels.toml:/app/channels.toml:ro
-      - postbot_db:/app/db
+      - ./data:/app/data
       - postbot_logs:/app/logs
     networks:
       - internal
@@ -53,6 +54,5 @@ networks:
     driver: bridge
 
 volumes:
-  postbot_db:
   postbot_logs:
   webui_data:
