@@ -204,12 +204,19 @@ uv run main.py
 
 # webui (in a separate terminal)
 cd webui
-uv run python manage.py migrate
-uv run python manage.py runserver 8080
+mkdir -p data
+DJANGO_SETTINGS_MODULE=webui.settings DEBUG=true uv run python manage.py migrate
+DJANGO_SETTINGS_MODULE=webui.settings DEBUG=true uv run python manage.py createsuperuser
+DJANGO_SETTINGS_MODULE=webui.settings DEBUG=true uv run python manage.py runserver 8080
 ```
 
 Set `POSTBOT_API_URL=http://localhost:8000` and `POSTBOT_API_SECRET` in the
 webui environment to match the running postbot instance.
+
+`DEBUG=true` skips the `DJANGO_SECRET_KEY` requirement so no `.env` is needed
+for local development. The webui works without an LDAP server — login attempts
+fall through to Django's local `ModelBackend` automatically, so the superuser
+created above can log in at http://localhost:8080/login/.
 
 ---
 
