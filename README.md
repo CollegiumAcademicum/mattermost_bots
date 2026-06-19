@@ -214,8 +214,12 @@ cd ..
 **Terminal 1 — postbot**
 
 ```bash
-cd postbot && uv run main.py
+uv run postbot/main.py
 ```
+
+> **Standalone mode** (without webui): `cd postbot && uv run main.py` instead.
+> postbot resolves `.env` relative to the working directory, so the launch
+> path determines which config file is used.
 
 **Terminal 2 — webui**
 

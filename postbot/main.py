@@ -22,6 +22,10 @@ from config import PostBotConfig
 
 def main() -> None:
     """Load configuration, build the bot, and run it until interrupted."""
+    # .env is resolved relative to CWD so the launch directory determines
+    # which config is used:
+    #   cd postbot && uv run main.py      → postbot/.env  (standalone)
+    #   uv run postbot/main.py            → .env at repo root (full stack)
     config = PostBotConfig.load(".env")
 
     bot = PostBot(config)
@@ -45,6 +49,10 @@ def main() -> None:
 
     bot.run()
 
+
+def create_dirs(config: PostBotConfig) -> None:
+
+    pass
 
 if __name__ == "__main__":
     main()

@@ -67,6 +67,34 @@ class PostBotConfig(BotConfig):
         return upper
 
     @classmethod
+    def load_merged(cls, *paths: str | Path) -> "PostBotConfig":
+        """Load and merge multiple ``.env`` files into one config.
+
+        Files are processed in order; later files override earlier ones.
+        Files that do not exist are silently skipped.  Raises
+        :class:`~mmbot_framework.ConfigError` if no files are found at all
+        or if the merged values fail validation.
+
+        Args:
+            *paths: ``.env`` file paths to load, in priority order (lowest
+                first, highest last).
+        """
+        merged: dict[str, str | None] = {}
+        found_any = False
+        for p in paths:
+            p = Path(p)
+            if p.exists():
+                merged.update(dotenv_values(p))
+                found_any = True
+        if not found_any:
+            raise ConfigError(f"No .env file found among: {[str(p) for p in paths]}")
+        normalised = {k.lower(): v for k, v in merged.items()}
+        try:
+            return cls(**normalised)
+        except Exception as exc:
+            raise ConfigError(f"Invalid configuration: {exc}") from exc
+
+    @classmethod
     def load(cls, path: str | Path = ".env") -> "PostBotConfig":
         """Load configuration from a ``.env`` file.
 
