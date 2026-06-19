@@ -196,27 +196,36 @@ uv run --extra dev pytest -v
 
 ### Running locally without Docker
 
-```bash
-# postbot
-cd postbot
-cp .env.example .env   # fill in values
-uv run main.py
+Both postbot and webui read from the same `.env` file in the repo root.
 
-# webui (in a separate terminal)
+**First-time setup**
+
+```bash
+cp .env.example .env   # fill in URL, TOKEN, TEAM_NAME — secrets are already wired up
+
+# Create the webui database and a local admin account (run once)
 cd webui
 mkdir -p data
 DJANGO_SETTINGS_MODULE=webui.settings DEBUG=true uv run python manage.py migrate
 DJANGO_SETTINGS_MODULE=webui.settings DEBUG=true uv run python manage.py createsuperuser
-DJANGO_SETTINGS_MODULE=webui.settings DEBUG=true uv run python manage.py runserver 8080
+cd ..
 ```
 
-Set `POSTBOT_API_URL=http://localhost:8000` and `POSTBOT_API_SECRET` in the
-webui environment to match the running postbot instance.
+**Terminal 1 — postbot**
 
-`DEBUG=true` skips the `DJANGO_SECRET_KEY` requirement so no `.env` is needed
-for local development. The webui works without an LDAP server — login attempts
-fall through to Django's local `ModelBackend` automatically, so the superuser
-created above can log in at http://localhost:8080/login/.
+```bash
+cd postbot && uv run main.py
+```
+
+**Terminal 2 — webui**
+
+```bash
+cd webui && DJANGO_SETTINGS_MODULE=webui.settings DEBUG=true uv run python manage.py runserver 8080
+```
+
+Open http://localhost:8080/login/ and log in with the superuser you created.
+
+`DEBUG=true` is passed explicitly (not in `.env`) so production deployments cannot accidentally enable debug mode. No LDAP server is required — login falls through to Django's local `ModelBackend` automatically.
 
 ---
 

@@ -3,8 +3,13 @@ import os
 from pathlib import Path
 
 from django.core.exceptions import ImproperlyConfigured
+from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Load shared .env from the repo root (parent of webui/).
+# Already-set environment variables take precedence (override=False).
+load_dotenv(BASE_DIR.parent / ".env", override=False)
 
 _INSECURE_KEY = "insecure-dev-key-do-not-use-in-production"
 SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", _INSECURE_KEY)
