@@ -98,6 +98,14 @@ try:
         "last_name": "sn",
         "email": "mail",
     }
+
+    # OPT_REFERRALS=0 is required for FreeIPA (prevents chasing referrals).
+    AUTH_LDAP_GLOBAL_OPTIONS = {ldap.OPT_REFERRALS: 0}
+    _ca_cert = os.environ.get("LDAP_CA_CERT_PATH", "")
+    if _ca_cert:
+        AUTH_LDAP_GLOBAL_OPTIONS[ldap.OPT_X_TLS_CACERTFILE] = _ca_cert
+        AUTH_LDAP_GLOBAL_OPTIONS[ldap.OPT_X_TLS_REQUIRE_CERT] = ldap.OPT_X_TLS_DEMAND
+
     AUTHENTICATION_BACKENDS = [
         "broadcast.auth.CustomLDAPBackend",
         "django.contrib.auth.backends.ModelBackend",
