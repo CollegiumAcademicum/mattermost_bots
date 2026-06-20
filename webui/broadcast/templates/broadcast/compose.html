@@ -1,49 +1,140 @@
 {% extends "base.html" %}
-{% block title %}Compose Broadcast{% endblock %}
+{% block title %}Verfassen{% endblock %}
+
+{% block progress %}
+<div class="ca-progress">
+  <div class="ca-step active">
+    <div class="ca-step-circle">1</div>
+    <div class="ca-step-label">Verfassen</div>
+  </div>
+  <div class="ca-step-line"></div>
+  <div class="ca-step">
+    <div class="ca-step-circle">2</div>
+    <div class="ca-step-label">Bestätigen</div>
+  </div>
+  <div class="ca-step-line"></div>
+  <div class="ca-step">
+    <div class="ca-step-circle">3</div>
+    <div class="ca-step-label">Ergebnis</div>
+  </div>
+</div>
+{% endblock %}
+
 {% block content %}
-<h1>Compose Broadcast</h1>
-<form method="post">
+<div class="ca-card">
+  <form method="post" id="compose-form">
     {% csrf_token %}
 
-    <h2>Message</h2>
-    <textarea name="message" rows="8" cols="80" required>{{ request.session.broadcast_message|default:'' }}</textarea>
+    <label class="ca-label" for="id_message">Nachricht</label>
+    <textarea class="ca-textarea" name="message" id="id_message" rows="6"
+      placeholder="Nachricht hier eingeben …" required>{{ request.session.broadcast_message|default:'' }}</textarea>
 
-    <h2>Groups</h2>
-    {% for group_name, channels in channels_data.groups.items %}
-        <label>
-            <input type="checkbox" name="groups" value="{{ group_name }}">
-            <strong>{{ group_name }}</strong> ({{ channels|length }} channels)
-        </label><br>
-    {% empty %}
-        <em>No groups available.</em>
-    {% endfor %}
+    <hr class="ca-divider">
 
-    {% if channels_data.private_groups %}
-    <h3>Private Groups</h3>
-    {% for group_name, channels in channels_data.private_groups.items %}
-        <label>
-            <input type="checkbox" name="groups" value="{{ group_name }}">
-            <strong>{{ group_name }}</strong> ({{ channels|length }} channels)
-        </label><br>
-    {% endfor %}
+    <label class="ca-label">Gruppen</label>
+    {% if channels_data.groups %}
+    <div class="group-grid">
+      {% for group_name, channels in channels_data.groups.items %}
+      <div class="group-card" id="g-{{ forloop.counter0 }}">
+        <div class="group-card-top" onclick="toggleSelect('g-{{ forloop.counter0 }}')">
+          <div class="group-check"></div>
+          <div class="group-info">
+            <div class="group-name">{{ group_name }}</div>
+          </div>
+          <button type="button" class="group-expand-btn"
+            onclick="event.stopPropagation();toggleChannels('g-{{ forloop.counter0 }}c')"
+            title="Kanäle anzeigen">
+            {{ channels|length }} Kanal{% if channels|length != 1 %}e{% endif %} ▾
+          </button>
+        </div>
+        <input type="checkbox" name="groups" value="{{ group_name }}"
+          id="chk-g-{{ forloop.counter0 }}" style="display:none">
+        <div class="group-channels" id="g-{{ forloop.counter0 }}c">
+          <ul>
+            {% for ch in channels %}
+            <li>{{ ch.display_name }}</li>
+            {% endfor %}
+          </ul>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p style="color:#7a7a7a;font-size:0.9rem;">Keine Gruppen verfügbar.</p>
     {% endif %}
 
-    <details>
-        <summary>Individual Channels</summary>
-        {% for ch in channels_data.individual_channels %}
-            <label>
-                <input type="checkbox" name="individual_channels" value="{{ ch.id }}">
-                {{ ch.display_name }}
-                {% if ch.display_name != ch.channel_name %}
-                    <small>({{ ch.channel_name }})</small>
-                {% endif %}
-            </label><br>
-        {% empty %}
-            <em>No individual channels available.</em>
-        {% endfor %}
-    </details>
+    {% if channels_data.private_groups %}
+    <p class="ca-label" style="margin-top:1.25rem;">Private Gruppen</p>
+    <div class="group-grid">
+      {% for group_name, channels in channels_data.private_groups.items %}
+      <div class="group-card" id="pg-{{ forloop.counter0 }}">
+        <div class="group-card-top" onclick="toggleSelect('pg-{{ forloop.counter0 }}')">
+          <div class="group-check"></div>
+          <div class="group-info">
+            <div class="group-name">{{ group_name }}</div>
+          </div>
+          <button type="button" class="group-expand-btn"
+            onclick="event.stopPropagation();toggleChannels('pg-{{ forloop.counter0 }}c')"
+            title="Kanäle anzeigen">
+            {{ channels|length }} Kanal{% if channels|length != 1 %}e{% endif %} ▾
+          </button>
+        </div>
+        <input type="checkbox" name="groups" value="{{ group_name }}"
+          id="chk-pg-{{ forloop.counter0 }}" style="display:none">
+        <div class="group-channels" id="pg-{{ forloop.counter0 }}c">
+          <ul>
+            {% for ch in channels %}
+            <li>{{ ch.display_name }}</li>
+            {% endfor %}
+          </ul>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
 
-    <br>
-    <button type="submit">Preview &amp; Confirm</button>
-</form>
+    {% if channels_data.individual_channels %}
+    <hr class="ca-divider">
+    <details>
+      <summary style="cursor:pointer;color:var(--ca-teal);font-weight:600;font-size:0.9rem;user-select:none;">
+        Einzelne Kanäle auswählen
+      </summary>
+      <div style="margin-top:0.75rem;display:flex;flex-direction:column;gap:0.35rem;">
+        {% for ch in channels_data.individual_channels %}
+        <label style="display:flex;align-items:center;gap:0.5rem;font-size:0.9rem;cursor:pointer;">
+          <input type="checkbox" name="individual_channels" value="{{ ch.id }}"
+            style="accent-color:var(--ca-teal);">
+          {{ ch.display_name }}
+          {% if ch.display_name != ch.channel_name %}
+          <span style="color:#7a7a7a;font-size:0.8rem;">({{ ch.channel_name }})</span>
+          {% endif %}
+        </label>
+        {% endfor %}
+      </div>
+    </details>
+    {% endif %}
+
+    <hr class="ca-divider">
+    <button type="submit" class="ca-button">Vorschau &amp; Bestätigen →</button>
+  </form>
+</div>
+
+<script>
+function toggleSelect(id) {
+  const card = document.getElementById(id);
+  card.classList.toggle('selected');
+  const chk = card.querySelector('input[type=checkbox]');
+  chk.checked = card.classList.contains('selected');
+  card.querySelector('.group-check').textContent =
+    card.classList.contains('selected') ? '✓' : '';
+}
+function toggleChannels(id) {
+  const el = document.getElementById(id);
+  el.classList.toggle('open');
+  const btn = el.previousElementSibling.querySelector('.group-expand-btn');
+  btn.innerHTML = btn.innerHTML.includes('▾')
+    ? btn.innerHTML.replace('▾', '▴')
+    : btn.innerHTML.replace('▴', '▾');
+}
+</script>
 {% endblock %}

@@ -1,21 +1,62 @@
 {% extends "base.html" %}
-{% block title %}Broadcast Result{% endblock %}
+{% block title %}Ergebnis{% endblock %}
+
+{% block progress %}
+<div class="ca-progress">
+  <div class="ca-step done">
+    <div class="ca-step-circle">1</div>
+    <div class="ca-step-label">Verfassen</div>
+  </div>
+  <div class="ca-step-line done"></div>
+  <div class="ca-step done">
+    <div class="ca-step-circle">2</div>
+    <div class="ca-step-label">Bestätigen</div>
+  </div>
+  <div class="ca-step-line done"></div>
+  <div class="ca-step active">
+    <div class="ca-step-circle">3</div>
+    <div class="ca-step-label">Ergebnis</div>
+  </div>
+</div>
+{% endblock %}
+
 {% block content %}
-<h1>Broadcast Result</h1>
-
-{% if result.failed == 0 %}
-    <p>Sent successfully to {{ result.sent }} channel(s).</p>
-{% elif result.sent == 0 %}
-    <p>Broadcast failed - could not send to any channel.</p>
-    <ul>
-        {% for err in result.errors %}<li>{{ err }}</li>{% endfor %}
+<div class="ca-card">
+  {% if result.failed == 0 %}
+  <div class="ca-result success" style="text-align:center;">
+    <div class="ca-result-icon">✅</div>
+    <div class="ca-result-title">Erfolgreich gesendet</div>
+    <div class="ca-result-sub">Nachricht wurde an {{ result.sent }} Kanal{% if result.sent != 1 %}e{% endif %} übermittelt.</div>
+  </div>
+  {% elif result.sent == 0 %}
+  <div class="ca-result failure" style="text-align:center;">
+    <div class="ca-result-icon">❌</div>
+    <div class="ca-result-title">Senden fehlgeschlagen</div>
+    <div class="ca-result-sub">Die Nachricht konnte an keinen Kanal übermittelt werden.</div>
+    {% if result.errors %}
+    <ul class="ca-error-list" style="text-align:left;margin-top:1rem;">
+      {% for err in result.errors %}<li>{{ err }}</li>{% endfor %}
     </ul>
-{% else %}
-    <p>Partially sent: {{ result.sent }} succeeded, {{ result.failed }} failed.</p>
-    <ul>
-        {% for err in result.errors %}<li>{{ err }}</li>{% endfor %}
+    {% endif %}
+  </div>
+  {% else %}
+  <div class="ca-result partial" style="text-align:center;">
+    <div class="ca-result-icon">⚠️</div>
+    <div class="ca-result-title">Teilweise gesendet</div>
+    <div class="ca-result-sub">{{ result.sent }} erfolgreich, {{ result.failed }} fehlgeschlagen.</div>
+    {% if result.errors %}
+    <ul class="ca-error-list" style="text-align:left;margin-top:1rem;">
+      {% for err in result.errors %}<li>{{ err }}</li>{% endfor %}
     </ul>
-{% endif %}
+    {% endif %}
+  </div>
+  {% endif %}
 
-<p><a href="{% url 'broadcast:compose' %}">Send Another Broadcast</a></p>
+  <hr class="ca-divider">
+  <div style="text-align:center;">
+    <a href="{% url 'broadcast:compose' %}" class="ca-button" style="display:inline-block;text-decoration:none;">
+      Neue Nachricht
+    </a>
+  </div>
+</div>
 {% endblock %}

@@ -1,10 +1,61 @@
-{% extends "base.html" %}
-{% block title %}Login{% endblock %}
-{% block content %}
-<h1>Login</h1>
-<form method="post">
-    {% csrf_token %}
-    {{ form.as_p }}
-    <button type="submit">Login</button>
-</form>
-{% endblock %}
+{% load static %}
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Anmelden — Collegium Academicum</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'broadcast/ca.css' %}">
+</head>
+<body>
+
+<nav class="ca-navbar">
+  <a class="ca-navbar-logo" href="https://collegiumacademicum.de">
+    <img src="https://collegiumacademicum.de/img/logo-small.png" alt="Collegium Academicum">
+  </a>
+</nav>
+
+<div class="ca-main ca-login-wrap">
+  <div class="ca-login-logo">
+    <img src="https://collegiumacademicum.de/img/logo.png" alt="Collegium Academicum">
+  </div>
+
+  <div class="ca-login-card">
+    <div class="ca-login-title">Broadcast-Tool</div>
+
+    {% if form.errors %}
+      <div class="ca-message error">Benutzername oder Passwort ungültig.</div>
+    {% endif %}
+
+    <form method="post">
+      {% csrf_token %}
+      <div class="ca-field">
+        <label class="ca-label" for="id_username">Benutzername</label>
+        <input class="ca-input" type="text" name="username" id="id_username" autofocus required>
+      </div>
+      <div class="ca-field">
+        <label class="ca-label" for="id_password">Passwort</label>
+        <input class="ca-input" type="password" name="password" id="id_password" required>
+      </div>
+      <input type="hidden" name="next" value="{{ next }}">
+      <button type="submit" class="ca-button">Anmelden</button>
+    </form>
+  </div>
+</div>
+
+<footer class="ca-footer">
+  <div class="ca-footer-logo">
+    <img src="https://collegiumacademicum.de/img/logo-small.png" alt="Collegium Academicum">
+  </div>
+  <span class="ca-footer-email">kontakt@collegiumacademicum.de</span>
+  <div class="ca-footer-links">
+    <a href="https://collegiumacademicum.de/impressum" target="_blank">Impressum</a>
+    <a href="https://collegiumacademicum.de/datenschutz" target="_blank">Datenschutz</a>
+    <a href="https://collegiumacademicum.de/kontakt" target="_blank">Kontakt</a>
+  </div>
+</footer>
+
+</body>
+</html>

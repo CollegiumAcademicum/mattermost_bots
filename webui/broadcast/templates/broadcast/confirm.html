@@ -1,24 +1,51 @@
 {% extends "base.html" %}
-{% block title %}Confirm Broadcast{% endblock %}
+{% block title %}Bestätigen{% endblock %}
+
+{% block progress %}
+<div class="ca-progress">
+  <div class="ca-step done">
+    <div class="ca-step-circle">1</div>
+    <div class="ca-step-label">Verfassen</div>
+  </div>
+  <div class="ca-step-line done"></div>
+  <div class="ca-step active">
+    <div class="ca-step-circle">2</div>
+    <div class="ca-step-label">Bestätigen</div>
+  </div>
+  <div class="ca-step-line"></div>
+  <div class="ca-step">
+    <div class="ca-step-circle">3</div>
+    <div class="ca-step-label">Ergebnis</div>
+  </div>
+</div>
+{% endblock %}
+
 {% block content %}
-<h1>Confirm Broadcast</h1>
+<div class="ca-card">
+  <label class="ca-label">Nachricht</label>
+  <pre class="ca-message-preview">{{ message }}</pre>
 
-<h2>Message</h2>
-<pre style="border:1px solid #ccc; padding:1em;">{{ message }}</pre>
+  <hr class="ca-divider">
 
-<h2>Target Channels ({{ resolved_names|length }})</h2>
-<ul>
+  <label class="ca-label">Empfänger ({{ resolved_names|length }} Kanal{% if resolved_names|length != 1 %}e{% endif %})</label>
+  {% if resolved_names %}
+  <ul class="ca-channel-list">
     {% for name in resolved_names %}
-        <li>{{ name }}</li>
-    {% empty %}
-        <li><em>No channels selected.</em></li>
+    <li>{{ name }}</li>
     {% endfor %}
-</ul>
+  </ul>
+  {% else %}
+  <p style="color:#7a7a7a;font-size:0.9rem;">Keine Kanäle ausgewählt.</p>
+  {% endif %}
 
-<form method="post">
+  <hr class="ca-divider">
+
+  <form method="post">
     {% csrf_token %}
-    <button type="submit" name="action" value="send">Send Broadcast</button>
-    &nbsp;
-    <button type="submit" name="action" value="back">Go Back</button>
-</form>
+    <div class="ca-button-row">
+      <button type="submit" name="action" value="send" class="ca-button">Senden</button>
+      <button type="submit" name="action" value="back" class="ca-button-outline">← Zurück</button>
+    </div>
+  </form>
+</div>
 {% endblock %}
