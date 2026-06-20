@@ -193,6 +193,7 @@ class BaseBot:
            d. Opens the WebSocket listener (via executor so we stay in async context).
         4. On KeyboardInterrupt: awaits :meth:`on_stop` and shuts down cleanly.
         """
+        print("Setting up Logging")
         self._setup_logging()
         logger.info("Bot starting up.")
 
