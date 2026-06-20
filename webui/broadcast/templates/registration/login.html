@@ -23,7 +23,7 @@
   </div>
 
   <div class="ca-login-card">
-    <div class="ca-login-title">Broadcast-Tool</div>
+    <div class="ca-login-title">Postbot-Webinterface</div>
 
     {% if form.errors %}
       <div class="ca-message error">Benutzername oder Passwort ungültig.</div>
@@ -32,11 +32,11 @@
     <form method="post">
       {% csrf_token %}
       <div class="ca-field">
-        <label class="ca-label" for="id_username">Benutzername</label>
+        <label class="ca-label" for="id_username">Intranet-Benutzername</label>
         <input class="ca-input" type="text" name="username" id="id_username" autofocus required>
       </div>
       <div class="ca-field">
-        <label class="ca-label" for="id_password">Passwort</label>
+        <label class="ca-label" for="id_password">Intranet-Passwort</label>
         <input class="ca-input" type="password" name="password" id="id_password" required>
       </div>
       <input type="hidden" name="next" value="{{ next }}">
