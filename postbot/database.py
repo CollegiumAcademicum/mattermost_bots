@@ -109,6 +109,44 @@ def log_broadcast(
         logger.error(f"Failed to log broadcast: {exc}")
 
 
+def get_history(page: int = 1, per_page: int = 20) -> tuple[int, list[dict]]:
+    """Return a paginated page of broadcast records, newest first.
+
+    Args:
+        page: 1-based page number.
+        per_page: Records per page (capped at 100).
+
+    Returns:
+        ``(total, results)`` where ``total`` is the full record count and
+        ``results`` is a list of dicts with keys ``id``, ``timestamp``,
+        ``sender_name``, ``message_content``, ``target_channels`` (list),
+        ``file_ids`` (list).
+    """
+    per_page = min(per_page, 100)
+    offset = (page - 1) * per_page
+    conn = _get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT COUNT(*) FROM broadcasts")
+    total: int = cursor.fetchone()[0]
+    cursor.execute(
+        "SELECT id, timestamp, sender_name, message_content, target_channels, file_ids "
+        "FROM broadcasts ORDER BY id DESC LIMIT ? OFFSET ?",
+        (per_page, offset),
+    )
+    results = [
+        {
+            "id": row[0],
+            "timestamp": row[1],
+            "sender_name": row[2],
+            "message_content": row[3],
+            "target_channels": json.loads(row[4]) if row[4] else [],
+            "file_ids": json.loads(row[5]) if row[5] else [],
+        }
+        for row in cursor.fetchall()
+    ]
+    return total, results
+
+
 def close_db_connection() -> None:
     """Close the database connection for the current thread.
 

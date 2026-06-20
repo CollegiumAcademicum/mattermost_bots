@@ -9,6 +9,7 @@ from database import (
     initialize_database,
     log_broadcast,
     close_db_connection,
+    get_history,
 )
 
 
@@ -168,3 +169,54 @@ def test_initialize_migration_adds_file_ids(tmp_path):
         assert "file_ids" in columns
     finally:
         conn.close()
+
+
+def test_get_history_empty_db(tmp_path):
+    db_file = tmp_path / "test.db"
+    initialize_database(db_file)
+    total, results = get_history()
+    assert total == 0
+    assert results == []
+
+
+def test_get_history_returns_newest_first(tmp_path):
+    db_file = tmp_path / "test.db"
+    initialize_database(db_file)
+    log_broadcast("alice", "first", ["ch1"])
+    log_broadcast("bob", "second", ["ch2"])
+    total, results = get_history(page=1, per_page=10)
+    assert total == 2
+    assert results[0]["sender_name"] == "bob"
+    assert results[1]["sender_name"] == "alice"
+
+
+def test_get_history_pagination(tmp_path):
+    db_file = tmp_path / "test.db"
+    initialize_database(db_file)
+    for i in range(5):
+        log_broadcast(f"user{i}", f"msg{i}", [f"ch{i}"])
+    total, page1 = get_history(page=1, per_page=3)
+    assert total == 5
+    assert len(page1) == 3
+    _, page2 = get_history(page=2, per_page=3)
+    assert len(page2) == 2
+
+
+def test_get_history_caps_per_page_at_100(tmp_path):
+    db_file = tmp_path / "test.db"
+    initialize_database(db_file)
+    # Must not raise with a huge per_page value.
+    total, results = get_history(page=1, per_page=9999)
+    assert total == 0
+
+
+def test_get_history_deserializes_fields(tmp_path):
+    db_file = tmp_path / "test.db"
+    initialize_database(db_file)
+    log_broadcast("alice", "msg", ["Channel A", "Channel B"], file_ids=["f1"])
+    _, results = get_history()
+    r = results[0]
+    assert r["target_channels"] == ["Channel A", "Channel B"]
+    assert r["file_ids"] == ["f1"]
+    assert r["sender_name"] == "alice"
+    assert "timestamp" in r
