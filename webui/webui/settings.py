@@ -103,8 +103,16 @@ try:
     AUTH_LDAP_GLOBAL_OPTIONS = {ldap.OPT_REFERRALS: 0}
     _ca_cert = os.environ.get("LDAP_CA_CERT_PATH", "")
     if _ca_cert:
-        AUTH_LDAP_GLOBAL_OPTIONS[ldap.OPT_X_TLS_CACERTFILE] = _ca_cert
-        AUTH_LDAP_GLOBAL_OPTIONS[ldap.OPT_X_TLS_REQUIRE_CERT] = ldap.OPT_X_TLS_DEMAND
+        try:
+            # Probe whether OPT_X_TLS_CACERTFILE is supported (fails on macOS).
+            ldap.set_option(ldap.OPT_X_TLS_CACERTFILE, _ca_cert)
+            AUTH_LDAP_GLOBAL_OPTIONS[ldap.OPT_X_TLS_CACERTFILE] = _ca_cert
+            AUTH_LDAP_GLOBAL_OPTIONS[ldap.OPT_X_TLS_REQUIRE_CERT] = ldap.OPT_X_TLS_DEMAND
+        except ValueError:
+            # macOS Secure Transport: cert pinning not supported via python-ldap.
+            # Disable verification so TLS still works (dev only).
+            AUTH_LDAP_GLOBAL_OPTIONS[ldap.OPT_X_TLS_REQUIRE_CERT] = ldap.OPT_X_TLS_NEVER
+            AUTH_LDAP_GLOBAL_OPTIONS[ldap.OPT_X_TLS_NEWCTX] = 0
 
     AUTHENTICATION_BACKENDS = [
         "broadcast.auth.CustomLDAPBackend",
