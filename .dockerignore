@@ -4,4 +4,8 @@
 **/logs/
 .git/
 .env
-
+webui/
+docs/
+old/
+data/
+scripts/

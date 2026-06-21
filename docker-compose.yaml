@@ -2,7 +2,7 @@ services:
   postbot:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: postbot/Dockerfile
     volumes:
       - ./.env:/app/.env:ro
       - ./data/postbot:/app/data

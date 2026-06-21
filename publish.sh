@@ -1,22 +1,49 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-IMAGE="philippbtz/mattermost_bots"
+POSTBOT_IMAGE="philippbtz/mattermost-postbot"
+WEBUI_IMAGE="philippbtz/mattermost-webui"
 
-# Optional version tag as first argument, e.g. ./publish.sh 1.2.0
-VERSION="${1:-}"
+# Usage: ./publish.sh [postbot|webui] [version]
+TARGET="${1:-all}"
+VERSION="${2:-}"
 
-docker build -t "${IMAGE}:latest" .
+build_and_push() {
+  local image="$1"
+  local context="$2"
+  local dockerfile="$3"
 
-if [[ -n "${VERSION}" ]]; then
-  docker tag "${IMAGE}:latest" "${IMAGE}:${VERSION}"
-fi
+  echo "==> Building ${image}:latest"
+  docker build -t "${image}:latest" -f "${dockerfile}" "${context}"
 
-docker push "${IMAGE}:latest"
+  if [[ -n "${VERSION}" ]]; then
+    docker tag "${image}:latest" "${image}:${VERSION}"
+  fi
 
-if [[ -n "${VERSION}" ]]; then
-  docker push "${IMAGE}:${VERSION}"
-  echo "Pushed ${IMAGE}:latest and ${IMAGE}:${VERSION}"
-else
-  echo "Pushed ${IMAGE}:latest"
-fi
+  echo "==> Pushing ${image}:latest"
+  docker push "${image}:latest"
+
+  if [[ -n "${VERSION}" ]]; then
+    echo "==> Pushing ${image}:${VERSION}"
+    docker push "${image}:${VERSION}"
+  fi
+}
+
+case "${TARGET}" in
+  postbot)
+    build_and_push "${POSTBOT_IMAGE}" "." "postbot/Dockerfile"
+    ;;
+  webui)
+    build_and_push "${WEBUI_IMAGE}" "webui" "webui/Dockerfile"
+    ;;
+  all)
+    build_and_push "${POSTBOT_IMAGE}" "." "postbot/Dockerfile"
+    build_and_push "${WEBUI_IMAGE}" "webui" "webui/Dockerfile"
+    ;;
+  *)
+    echo "Usage: $0 [postbot|webui|all] [version]"
+    exit 1
+    ;;
+esac
+
+echo "Done."
