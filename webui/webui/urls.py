@@ -11,4 +11,5 @@ urlpatterns = [
     ),
     path("logout/", auth_views.LogoutView.as_view(), name="logout"),
     path("broadcast/", include("broadcast.urls")),
+    path("admin-dashboard/", include("broadcast.admin_dashboard.urls")),
 ]

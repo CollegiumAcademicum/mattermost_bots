@@ -52,3 +52,18 @@ def put_config(config: dict) -> dict:
     )
     resp.raise_for_status()
     return resp.json()
+
+
+def get_channels() -> dict:
+    """Fetch channel list from postbot.
+
+    Returns dict with keys: individual_channels, groups, etc.
+    Raises requests.HTTPError on non-2xx response.
+    """
+    resp = requests.get(
+        f"{settings.POSTBOT_API_URL}/api/channels",
+        headers={"Authorization": f"Bearer {settings.POSTBOT_API_SECRET}"},
+        timeout=30,
+    )
+    resp.raise_for_status()
+    return resp.json()
