@@ -27,3 +27,22 @@ def get_tasks() -> dict:
             "schedule": registry.schedule.get(entry.name),
         })
     return {"tasks": tasks}
+
+
+@router.post("/api/tasks/{name}/run", dependencies=[Depends(verify_api_secret)])
+async def run_task(name: str) -> dict:
+    """Manually trigger a task. Fire-and-forget — returns immediately."""
+    bot = get_bot()
+    registry = bot._task_registry
+    entry = registry.get(name)
+    if entry is None:
+        raise HTTPException(status_code=404, detail=f"Task {name!r} not found.")
+    asyncio.create_task(
+        task_runner_module._fire_task(
+            entry,
+            bot.driver,
+            bot._post,
+            bot.config.bot_log_channel_id,
+        )
+    )
+    return {"ok": True}

@@ -79,3 +79,36 @@ def test_get_tasks_unscheduled_task_has_nulls():
     tasks_by_name = {t["name"]: t for t in resp.json()["tasks"]}
     assert tasks_by_name["cleanup_old_logs"]["schedule"] is None
     assert tasks_by_name["cleanup_old_logs"]["last_run"] is None
+
+
+def test_run_task_unknown_returns_404():
+    bot = _make_bot()
+    bot._task_registry = _make_registry()
+    set_bot(bot)
+    client = TestClient(app)
+
+    resp = client.post(
+        "/api/tasks/nonexistent/run",
+        headers={"Authorization": "Bearer test-secret"},
+    )
+
+    assert resp.status_code == 404
+
+
+def test_run_task_dispatches_and_returns_ok():
+    bot = _make_bot()
+    bot._task_registry = _make_registry()
+    set_bot(bot)
+    client = TestClient(app)
+
+    with patch("api.routes.tasks.task_runner_module._fire_task", new_callable=AsyncMock) as mock_fire:
+        resp = client.post(
+            "/api/tasks/example_task/run",
+            headers={"Authorization": "Bearer test-secret"},
+        )
+
+    assert resp.status_code == 200
+    assert resp.json() == {"ok": True}
+    mock_fire.assert_called_once()
+    call_args = mock_fire.call_args[0]
+    assert call_args[0].name == "example_task"  # TaskEntry
