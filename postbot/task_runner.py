@@ -59,9 +59,17 @@ def load_tasks(tasks_dir: Path) -> dict[str, TaskEntry]:
     """
     if not tasks_dir.exists():
         logger.warning(
-            f"Tasks directory {str(tasks_dir)!r} does not exist; no tasks loaded."
+            f"Tasks directory {str(tasks_dir)!r} does not exist; trying to create folder and seed default file."
         )
+        logger.info(f"there is an example task at postbot/tasks/example_task.py")
+        try:
+            tasks_dir.mkdir()
+        except Exception as e:
+            logger.warning(f"Tasks directory creation failed: {e}")
         return {}
+    logger.debug(
+        f"Tasks directory {str(tasks_dir)!r} exists. Proceeding to load tasks."
+    )
 
     tasks: dict[str, TaskEntry] = {}
     for path in sorted(tasks_dir.glob("*.py")):
