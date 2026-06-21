@@ -112,3 +112,82 @@ def test_run_task_dispatches_and_returns_ok():
     mock_fire.assert_called_once()
     call_args = mock_fire.call_args[0]
     assert call_args[0].name == "example_task"  # TaskEntry
+
+
+def test_set_schedule_unknown_task_returns_404():
+    bot = _make_bot()
+    bot._task_registry = _make_registry()
+    set_bot(bot)
+    client = TestClient(app)
+
+    resp = client.put(
+        "/api/tasks/nonexistent/schedule",
+        json={"cron": "0 9 * * 1"},
+        headers={"Authorization": "Bearer test-secret"},
+    )
+
+    assert resp.status_code == 404
+
+
+def test_set_schedule_invalid_cron_returns_422():
+    bot = _make_bot()
+    bot._task_registry = _make_registry()
+    set_bot(bot)
+    client = TestClient(app)
+
+    resp = client.put(
+        "/api/tasks/example_task/schedule",
+        json={"cron": "not-a-cron"},
+        headers={"Authorization": "Bearer test-secret"},
+    )
+
+    assert resp.status_code == 422
+    assert "Invalid cron" in resp.json()["detail"]
+
+
+def test_set_schedule_valid_cron_updates_registry_and_writes_file(tmp_path):
+    import toml as toml_module
+
+    scheduler_file = tmp_path / "scheduler.toml"
+    registry = _make_registry()
+    bot = _make_bot()
+    bot._task_registry = registry
+    bot.config.scheduler_toml_path = scheduler_file
+    set_bot(bot)
+    client = TestClient(app)
+
+    resp = client.put(
+        "/api/tasks/example_task/schedule",
+        json={"cron": "0 8 * * 1"},
+        headers={"Authorization": "Bearer test-secret"},
+    )
+
+    assert resp.status_code == 200
+    assert resp.json() == {"ok": True}
+    assert registry.schedule["example_task"] == "0 8 * * 1"
+    data = toml_module.load(scheduler_file)
+    assert data["tasks"]["example_task"] == "0 8 * * 1"
+
+
+def test_set_schedule_null_removes_from_registry_and_file(tmp_path):
+    import toml as toml_module
+
+    scheduler_file = tmp_path / "scheduler.toml"
+    registry = _make_registry()  # example_task is scheduled
+    bot = _make_bot()
+    bot._task_registry = registry
+    bot.config.scheduler_toml_path = scheduler_file
+    set_bot(bot)
+    client = TestClient(app)
+
+    resp = client.put(
+        "/api/tasks/example_task/schedule",
+        json={"cron": None},
+        headers={"Authorization": "Bearer test-secret"},
+    )
+
+    assert resp.status_code == 200
+    assert resp.json() == {"ok": True}
+    assert "example_task" not in registry.schedule
+    data = toml_module.load(scheduler_file)
+    assert "example_task" not in data.get("tasks", {})

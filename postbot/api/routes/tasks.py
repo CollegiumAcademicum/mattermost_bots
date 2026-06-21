@@ -46,3 +46,31 @@ async def run_task(name: str) -> dict:
         )
     )
     return {"ok": True}
+
+
+class SchedulePayload(BaseModel):
+    cron: str | None
+
+
+@router.put("/api/tasks/{name}/schedule", dependencies=[Depends(verify_api_secret)])
+def set_task_schedule(name: str, payload: SchedulePayload) -> dict:
+    """Set or remove a task's cron schedule, persisting to scheduler.toml."""
+    bot = get_bot()
+    registry = bot._task_registry
+    if registry.get(name) is None:
+        raise HTTPException(status_code=404, detail=f"Task {name!r} not found.")
+
+    if payload.cron is not None:
+        if not croniter.is_valid(payload.cron):
+            raise HTTPException(
+                status_code=422,
+                detail=f"Invalid cron expression: {payload.cron!r}",
+            )
+        registry.schedule[name] = payload.cron
+    else:
+        registry.schedule.pop(name, None)
+
+    with open(bot.config.scheduler_toml_path, "w", encoding="utf-8") as fh:
+        toml.dump({"tasks": registry.schedule}, fh)
+
+    return {"ok": True}
