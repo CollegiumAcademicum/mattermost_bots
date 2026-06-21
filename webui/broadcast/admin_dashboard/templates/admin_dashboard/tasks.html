@@ -1,7 +1,161 @@
 {% extends "base.html" %}
 {% block title %}Aufgaben{% endblock %}
+
 {% block content %}
 <div class="ca-card">
-  <p>{{ tasks|length }} Aufgabe(n)</p>
+
+  <!-- In-page tab navigation -->
+  <div class="tabs" style="margin-bottom:1.5rem;">
+    <ul>
+      <li><a href="{% url 'admin_dashboard:history' %}">Verlauf</a></li>
+      <li><a href="{% url 'admin_dashboard:config' %}">Konfiguration</a></li>
+      <li class="is-active"><a href="{% url 'admin_dashboard:tasks' %}">Aufgaben</a></li>
+    </ul>
+  </div>
+
+  <h2 class="ca-label" style="font-size:1.3rem;margin-bottom:1rem;">Aufgaben</h2>
+
+  {% if tasks %}
+  <div style="overflow-x:auto;">
+    <table class="table is-fullwidth is-striped is-hoverable" style="font-size:0.9rem;">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Beschreibung</th>
+          <th>Letzter Lauf</th>
+          <th>Zeitplan (Cron)</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for task in tasks %}
+        <tr>
+          <td style="font-weight:bold;">{{ task.name }}</td>
+          <td style="color:#555;">{{ task.description }}</td>
+          <td style="color:{% if task.last_run %}#555{% else %}#aaa{% endif %};">{{ task.last_run_display }}</td>
+
+          <!-- Schedule cell -->
+          <td style="min-width:220px;">
+            <!-- Normal state -->
+            <span id="display-{{ task.name }}">
+              {% if task.schedule %}
+              <code style="background:#f0f0f0;padding:2px 6px;border-radius:3px;cursor:pointer;border:1px solid transparent;"
+                    onclick="openEdit('{{ task.name }}', '{{ task.schedule }}')">{{ task.schedule }}</code>
+              <span style="color:#999;margin-left:4px;cursor:pointer;font-size:0.85rem;"
+                    onclick="openEdit('{{ task.name }}', '{{ task.schedule }}')">✎</span>
+              {% else %}
+              <a style="color:#aaa;font-size:0.85rem;cursor:pointer;"
+                 onclick="openEdit('{{ task.name }}', '')">+ Zeitplan hinzufügen</a>
+              {% endif %}
+            </span>
+
+            <!-- Edit state (hidden) -->
+            <span id="edit-{{ task.name }}" style="display:none;">
+              <input type="text" id="cron-input-{{ task.name }}"
+                     value="{{ task.schedule|default:'' }}"
+                     style="font-family:monospace;padding:3px 6px;border:1px solid #35ADA4;border-radius:3px;width:110px;font-size:0.85rem;" />
+              <button onclick="handleSave('{{ task.name }}')"
+                      style="background:#35ADA4;color:#fff;border:none;padding:3px 10px;border-radius:3px;cursor:pointer;font-size:0.85rem;margin-left:4px;">Speichern</button>
+              <button onclick="closeEdit('{{ task.name }}')"
+                      style="background:#fff;color:#666;border:1px solid #ccc;padding:3px 8px;border-radius:3px;cursor:pointer;font-size:0.85rem;margin-left:2px;">✕</button>
+              {% if task.schedule %}
+              <button onclick="handleRemove('{{ task.name }}')"
+                      style="background:#fff;color:#c0392b;border:1px solid #c0392b;padding:3px 8px;border-radius:3px;cursor:pointer;font-size:0.85rem;margin-left:2px;">Entfernen</button>
+              {% endif %}
+              <div id="cron-error-{{ task.name }}"
+                   style="color:#c0392b;font-size:0.8rem;margin-top:3px;display:none;"></div>
+            </span>
+
+            <!-- Confirmation dialog (hidden) -->
+            <div id="confirm-{{ task.name }}"
+                 style="display:none;margin-top:8px;border:1px solid #f0c040;background:#fffbe6;border-radius:6px;padding:10px 14px;">
+              <div id="confirm-text-{{ task.name }}" style="font-size:0.85rem;margin-bottom:8px;"></div>
+              <form method="post" style="display:inline;">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="set_schedule" />
+                <input type="hidden" name="name" value="{{ task.name }}" />
+                <input type="hidden" id="confirm-cron-{{ task.name }}" name="cron" value="" />
+                <button type="submit"
+                        style="background:#35ADA4;color:#fff;border:none;padding:3px 14px;border-radius:4px;cursor:pointer;font-size:0.85rem;">Bestätigen</button>
+                <button type="button" onclick="closeConfirm('{{ task.name }}')"
+                        style="background:#fff;color:#666;border:1px solid #ccc;padding:3px 12px;border-radius:4px;cursor:pointer;font-size:0.85rem;margin-left:6px;">Abbrechen</button>
+              </form>
+            </div>
+          </td>
+
+          <!-- Run button -->
+          <td>
+            <form method="post" style="display:inline;">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="run" />
+              <input type="hidden" name="name" value="{{ task.name }}" />
+              <button type="submit"
+                      style="background:#35ADA4;color:#fff;border:none;padding:4px 12px;border-radius:4px;cursor:pointer;font-size:0.85rem;">▶ Ausführen</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p style="color:#7a7a7a;font-size:0.9rem;">Keine Aufgaben gefunden.</p>
+  {% endif %}
 </div>
+
+<script>
+function isValidCron(expr) {
+  const fields = expr.trim().split(/\s+/);
+  if (fields.length !== 5) return false;
+  const f = /^(\*|\d+(-\d+)?(\/\d+)?|\*(\/\d+)?|\d+(,\d+)*)$/;
+  return fields.every(field => f.test(field));
+}
+
+function openEdit(name, currentCron) {
+  document.getElementById('display-' + name).style.display = 'none';
+  document.getElementById('edit-' + name).style.display = '';
+  document.getElementById('cron-input-' + name).value = currentCron;
+  document.getElementById('cron-error-' + name).style.display = 'none';
+  document.getElementById('confirm-' + name).style.display = 'none';
+}
+
+function closeEdit(name) {
+  document.getElementById('edit-' + name).style.display = 'none';
+  document.getElementById('display-' + name).style.display = '';
+  document.getElementById('confirm-' + name).style.display = 'none';
+}
+
+function closeConfirm(name) {
+  document.getElementById('confirm-' + name).style.display = 'none';
+}
+
+function handleSave(name) {
+  const cron = document.getElementById('cron-input-' + name).value.trim();
+  const errEl = document.getElementById('cron-error-' + name);
+
+  if (cron === '') {
+    handleRemove(name);
+    return;
+  }
+
+  if (!isValidCron(cron)) {
+    errEl.textContent = 'Ungültiger Cron-Ausdruck (5 Felder erwartet, z.B. "0 9 * * 1").';
+    errEl.style.display = '';
+    return;
+  }
+  errEl.style.display = 'none';
+
+  document.getElementById('confirm-text-' + name).innerHTML =
+    '<strong>' + name + '</strong>: Zeitplan setzen auf <code>' + cron + '</code>';
+  document.getElementById('confirm-cron-' + name).value = cron;
+  document.getElementById('confirm-' + name).style.display = '';
+}
+
+function handleRemove(name) {
+  document.getElementById('confirm-text-' + name).innerHTML =
+    '<strong>' + name + '</strong>: Zeitplan wird entfernt.';
+  document.getElementById('confirm-cron-' + name).value = '';
+  document.getElementById('confirm-' + name).style.display = '';
+}
+</script>
 {% endblock %}
