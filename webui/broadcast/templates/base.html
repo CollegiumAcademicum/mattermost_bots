@@ -17,6 +17,9 @@
   </a>
   {% if user.is_authenticated %}
   <div class="ca-navbar-right">
+    {% if is_bot_admin %}
+    <a href="/admin-dashboard/history/" class="ca-navbar-admin">Admin</a>
+    {% endif %}
     <span class="ca-navbar-user">{{ user.username }}</span>
     <form method="post" action="{% url 'logout' %}">
       {% csrf_token %}

@@ -34,6 +34,10 @@ body {
   font-family: inherit; font-weight: 600;
 }
 .ca-logout:hover { background: var(--ca-teal); color: white; }
+.ca-navbar-admin {
+  font-size: 0.85rem; color: var(--ca-teal); font-weight: 600; text-decoration: none;
+}
+.ca-navbar-admin:hover { text-decoration: underline; }
 
 /* ── Main ── */
 .ca-main { flex: 1; padding: 0 1.5rem 3rem; }
