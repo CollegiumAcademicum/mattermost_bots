@@ -1,2 +1,210 @@
 {% extends "base.html" %}
-{% block content %}config placeholder{% endblock %}
+{% block title %}Konfiguration{% endblock %}
+
+{% block content %}
+<div class="ca-card">
+  <h2 class="ca-label" style="font-size:1.3rem;margin-bottom:1rem;">Kanal-Konfiguration</h2>
+
+  <!-- Bulma Tabs -->
+  <div class="tabs" id="config-tabs">
+    <ul>
+      <li class="is-active" id="tab-groups"><a onclick="showTab('groups')">Gruppen</a></li>
+      <li id="tab-private_groups"><a onclick="showTab('private_groups')">Private Gruppen</a></li>
+      <li id="tab-whitelist"><a onclick="showTab('whitelist')">Whitelist</a></li>
+    </ul>
+  </div>
+
+  <!-- Group sections -->
+  {% for section in sections %}
+  <div id="panel-{{ section.key }}" class="tab-panel" style="display:{% if forloop.first %}block{% else %}none{% endif %};">
+
+    {% if section.entries %}
+    <table class="table is-fullwidth is-striped" style="font-size:0.9rem;margin-bottom:1rem;">
+      <thead>
+        <tr>
+          <th>Gruppenname</th>
+          <th>Kanäle</th>
+          <th>Aliase</th>
+          <th style="width:140px;"></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for entry in section.entries %}
+        <tr>
+          <td><strong>{{ entry.name }}</strong></td>
+          <td>
+            {% for name in entry.channel_display %}
+            <span style="display:inline-block;background:#e8f7f6;color:#2f9991;border-radius:3px;padding:1px 6px;font-size:0.8rem;margin:1px;">{{ name }}</span>
+            {% endfor %}
+          </td>
+          <td style="font-size:0.85rem;color:#7a7a7a;">{{ entry.aliases|join:", " }}</td>
+          <td>
+            <button type="button" class="button is-small is-info is-light"
+              onclick="toggleEdit('edit-{{ section.key }}-{{ forloop.counter }}')">
+              Bearbeiten
+            </button>
+            <form method="post" style="display:inline;"
+              onsubmit="return confirm('Gruppe &quot;{{ entry.name }}&quot; löschen?')">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="delete_group">
+              <input type="hidden" name="section" value="{{ section.key }}">
+              <input type="hidden" name="name" value="{{ entry.name }}">
+              <button type="submit" class="button is-small is-danger is-light">Löschen</button>
+            </form>
+          </td>
+        </tr>
+        <!-- Inline edit form -->
+        <tr id="edit-{{ section.key }}-{{ forloop.counter }}" style="display:none;background:#fafafa;">
+          <td colspan="4">
+            <form method="post" style="display:flex;flex-direction:column;gap:0.5rem;padding:0.5rem 0;">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="edit_group">
+              <input type="hidden" name="section" value="{{ section.key }}">
+              <input type="hidden" name="old_name" value="{{ entry.name }}">
+              <div style="display:flex;gap:0.5rem;flex-wrap:wrap;align-items:center;">
+                <label class="ca-label" style="margin:0;font-size:0.85rem;">Name</label>
+                <input class="input is-small" type="text" name="name"
+                  value="{{ entry.name }}" style="max-width:200px;">
+                <label class="ca-label" style="margin:0;font-size:0.85rem;">Aliase</label>
+                <input class="input is-small" type="text" name="aliases"
+                  value="{{ entry.aliases|join:', ' }}" placeholder="kommagetrennt"
+                  style="max-width:200px;">
+              </div>
+              <div>
+                <label class="ca-label" style="font-size:0.85rem;">Kanäle</label>
+                <select name="channels" multiple class="select is-small"
+                  style="width:100%;max-height:150px;">
+                  {% for ch in all_channels %}
+                  <option value="{{ ch.id }}"
+                    {% if ch.id in entry.channels %}selected{% endif %}>
+                    {{ ch.display_name }}
+                  </option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div>
+                <button type="submit" class="button is-small is-primary">Speichern</button>
+                <button type="button" class="button is-small is-light"
+                  onclick="toggleEdit('edit-{{ section.key }}-{{ forloop.counter }}')">Abbrechen</button>
+              </div>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p style="color:#7a7a7a;font-size:0.9rem;margin-bottom:1rem;">Keine Einträge.</p>
+    {% endif %}
+
+    <!-- Add group form -->
+    <details style="margin-top:0.5rem;">
+      <summary style="cursor:pointer;color:var(--ca-teal,#35ADA4);font-weight:600;font-size:0.9rem;">
+        + Gruppe hinzufügen
+      </summary>
+      <form method="post" style="display:flex;flex-direction:column;gap:0.5rem;padding:0.75rem 0;">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="add_group">
+        <input type="hidden" name="section" value="{{ section.key }}">
+        <div style="display:flex;gap:0.5rem;flex-wrap:wrap;align-items:center;">
+          <label class="ca-label" style="margin:0;font-size:0.85rem;">Name</label>
+          <input class="input is-small" type="text" name="name"
+            placeholder="Gruppenname" required style="max-width:200px;">
+          <label class="ca-label" style="margin:0;font-size:0.85rem;">Aliase</label>
+          <input class="input is-small" type="text" name="aliases"
+            placeholder="kommagetrennt" style="max-width:200px;">
+        </div>
+        <div>
+          <label class="ca-label" style="font-size:0.85rem;">Kanäle</label>
+          <select name="channels" multiple class="select is-small"
+            style="width:100%;max-height:150px;">
+            {% for ch in all_channels %}
+            <option value="{{ ch.id }}">{{ ch.display_name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <button type="submit" class="ca-button">Hinzufügen</button>
+        </div>
+      </form>
+    </details>
+  </div>
+  {% endfor %}
+
+  <!-- Whitelist section -->
+  <div id="panel-whitelist" class="tab-panel" style="display:none;">
+
+    {% if cfg.whitelist %}
+    <table class="table is-fullwidth is-striped" style="font-size:0.9rem;margin-bottom:1rem;">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Mattermost User-ID</th>
+          <th>Aliase</th>
+          <th style="width:100px;"></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for name, entry in cfg.whitelist.items %}
+        <tr>
+          <td><strong>{{ name }}</strong></td>
+          <td style="font-family:monospace;font-size:0.85rem;">{{ entry.id }}</td>
+          <td style="font-size:0.85rem;color:#7a7a7a;">{{ entry.aliases|join:", " }}</td>
+          <td>
+            <form method="post" style="display:inline;"
+              onsubmit="return confirm('Eintrag &quot;{{ name }}&quot; löschen?')">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="delete_whitelist">
+              <input type="hidden" name="name" value="{{ name }}">
+              <button type="submit" class="button is-small is-danger is-light">Löschen</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p style="color:#7a7a7a;font-size:0.9rem;margin-bottom:1rem;">Keine Einträge.</p>
+    {% endif %}
+
+    <!-- Add whitelist entry -->
+    <details style="margin-top:0.5rem;">
+      <summary style="cursor:pointer;color:var(--ca-teal,#35ADA4);font-weight:600;font-size:0.9rem;">
+        + Eintrag hinzufügen
+      </summary>
+      <form method="post" style="display:flex;flex-direction:column;gap:0.5rem;padding:0.75rem 0;">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="add_whitelist">
+        <div style="display:flex;gap:0.5rem;flex-wrap:wrap;align-items:center;">
+          <label class="ca-label" style="margin:0;font-size:0.85rem;">Name</label>
+          <input class="input is-small" type="text" name="name"
+            placeholder="Bezeichnung" required style="max-width:180px;">
+          <label class="ca-label" style="margin:0;font-size:0.85rem;">User-ID</label>
+          <input class="input is-small" type="text" name="id"
+            placeholder="Mattermost User-ID" required style="max-width:220px;">
+          <label class="ca-label" style="margin:0;font-size:0.85rem;">Aliase</label>
+          <input class="input is-small" type="text" name="aliases"
+            placeholder="kommagetrennt" style="max-width:180px;">
+        </div>
+        <div>
+          <button type="submit" class="ca-button">Hinzufügen</button>
+        </div>
+      </form>
+    </details>
+  </div>
+
+</div>
+
+<script>
+function showTab(key) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.style.display = 'none');
+  document.getElementById('panel-' + key).style.display = 'block';
+  document.querySelectorAll('#config-tabs li').forEach(li => li.classList.remove('is-active'));
+  document.getElementById('tab-' + key).classList.add('is-active');
+}
+function toggleEdit(id) {
+  const row = document.getElementById(id);
+  row.style.display = row.style.display === 'none' ? 'table-row' : 'none';
+}
+</script>
+{% endblock %}

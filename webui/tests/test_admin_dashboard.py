@@ -148,3 +148,55 @@ class HistoryTemplateTest(TestCase):
                    return_value=empty):
             resp = self.client.get("/admin-dashboard/history/")
         self.assertContains(resp, "Noch keine Broadcasts")
+
+
+class ConfigTemplateTest(TestCase):
+    """Test that config.html template renders key content."""
+
+    def setUp(self):
+        self.client = Client()
+        user = User.objects.create_user("configadmin", password="pw")
+        group = Group.objects.get_or_create(name="BotAdmins")[0]
+        user.groups.add(group)
+        self.client.login(username="configadmin", password="pw")
+
+    def _get(self):
+        with patch("broadcast.admin_dashboard.views.config.admin_client.get_config",
+                   return_value=MOCK_CONFIG), \
+             patch("broadcast.admin_dashboard.views.config.admin_client.get_channels",
+                   return_value=MOCK_CHANNELS):
+            return self.client.get("/admin-dashboard/config/")
+
+    def test_config_shows_group_name(self):
+        resp = self._get()
+        self.assertContains(resp, "Alle")
+
+    def test_config_shows_channel_display_name(self):
+        resp = self._get()
+        self.assertContains(resp, "Alle Bewohner")
+
+    def test_config_shows_whitelist_section(self):
+        cfg_with_whitelist = {
+            **MOCK_CONFIG,
+            "whitelist": {"alice": {"id": "user123", "aliases": []}},
+        }
+        with patch("broadcast.admin_dashboard.views.config.admin_client.get_config",
+                   return_value=cfg_with_whitelist), \
+             patch("broadcast.admin_dashboard.views.config.admin_client.get_channels",
+                   return_value=MOCK_CHANNELS):
+            resp = self.client.get("/admin-dashboard/config/")
+        self.assertContains(resp, "alice")
+        self.assertContains(resp, "user123")
+
+    def test_config_shows_add_group_form(self):
+        resp = self._get()
+        self.assertContains(resp, "add_group")
+
+    def test_config_empty_groups_shows_no_entries_message(self):
+        empty_cfg = {"groups": {}, "private_groups": {}, "whitelist": {}}
+        with patch("broadcast.admin_dashboard.views.config.admin_client.get_config",
+                   return_value=empty_cfg), \
+             patch("broadcast.admin_dashboard.views.config.admin_client.get_channels",
+                   return_value={"individual_channels": []}):
+            resp = self.client.get("/admin-dashboard/config/")
+        self.assertContains(resp, "Keine Einträge")
