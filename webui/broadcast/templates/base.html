@@ -18,7 +18,8 @@
   {% if user.is_authenticated %}
   <div class="ca-navbar-right">
     {% if is_bot_admin %}
-    <a href="/admin-dashboard/history/" class="ca-navbar-admin">Admin</a>
+    <a href="/admin-dashboard/history/" class="ca-navbar-admin">Verlauf</a>
+    <a href="/admin-dashboard/config/" class="ca-navbar-admin">Konfiguration</a>
     {% endif %}
     <span class="ca-navbar-user">{{ user.username }}</span>
     <form method="post" action="{% url 'logout' %}">
