@@ -22,6 +22,7 @@ import json
 import logging
 import logging.handlers
 import time
+import pathlib
 from dataclasses import dataclass, field as _field
 from pathlib import Path
 from typing import Callable
@@ -264,7 +265,10 @@ class PostBot(BaseBot):
         console_level = getattr(
             logging, self.config.console_log_level, logging.WARNING
         )
+        print("Logging level:", file_level, console_level)
 
+        pathlib.Path(self.config.log_file).parent.mkdir(parents=True, exist_ok=True)
+        print("Logging file path:", str(self.config.log_file))
         stream_handler = logging.StreamHandler()
         stream_handler.setLevel(console_level)
 
@@ -274,6 +278,7 @@ class PostBot(BaseBot):
                 self.config.log_file,
                 maxBytes=100 * 1024 * 1024,  # 100 MB, matching original postbot
                 backupCount=5,
+                mode="a+",
             )
             file_handler.setLevel(file_level)
             handlers.append(file_handler)

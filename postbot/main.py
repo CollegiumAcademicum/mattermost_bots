@@ -21,14 +21,17 @@ from config import PostBotConfig
 
 
 def main() -> None:
+    print("Starting postbot broadcast relay bot.")
     """Load configuration, build the bot, and run it until interrupted."""
     # .env is resolved relative to CWD so the launch directory determines
     # which config is used:
     #   cd postbot && uv run main.py      → postbot/.env  (standalone)
     #   uv run postbot/main.py            → .env at repo root (full stack)
     config = PostBotConfig.load(".env")
+    print("Configuration loaded.")
 
     bot = PostBot(config)
+    print("Bot instance created.")
 
     '''
     In this project i added the commands inside the bots __init__ function.
@@ -47,6 +50,7 @@ def main() -> None:
     bot.add_middleware(DMOnlyMiddleware())
     bot.add_middleware(IgnoreSelfMiddleware(bot))
 
+    print("Starting postbot broadcast relay bot.")
     bot.run()
 
 
