@@ -1,2 +1,69 @@
 {% extends "base.html" %}
-{% block content %}history placeholder{% endblock %}
+{% block title %}Broadcast-Verlauf{% endblock %}
+
+{% block content %}
+<div class="ca-card">
+  <h2 class="ca-label" style="font-size:1.3rem;margin-bottom:1rem;">
+    Broadcast-Verlauf
+    <span style="color:#7a7a7a;font-size:0.9rem;font-weight:400;">
+      ({{ total }} gesamt)
+    </span>
+  </h2>
+
+  {% if results %}
+  <div style="overflow-x:auto;">
+    <table class="table is-fullwidth is-striped is-hoverable" style="font-size:0.9rem;">
+      <thead>
+        <tr>
+          <th>Zeitpunkt</th>
+          <th>Absender</th>
+          <th>Kanäle</th>
+          <th>Nachricht</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in results %}
+        <tr>
+          <td style="white-space:nowrap;">{{ r.timestamp|slice:":16"|cut:"T" }}</td>
+          <td>{{ r.sender_name }}</td>
+          <td>
+            {% for ch in r.target_channels %}
+              <span style="display:inline-block;background:#e8f7f6;color:#2f9991;border-radius:3px;padding:1px 6px;font-size:0.8rem;margin:1px;">{{ ch }}</span>
+            {% endfor %}
+          </td>
+          <td>
+            <details>
+              <summary style="cursor:pointer;color:var(--ca-teal,#35ADA4);">
+                {{ r.message_content|truncatechars:80 }}
+              </summary>
+              <pre style="margin-top:0.5rem;font-size:0.85rem;white-space:pre-wrap;word-break:break-word;">{{ r.message_content }}</pre>
+            </details>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pagination -->
+  <div style="display:flex;align-items:center;gap:1rem;margin-top:1rem;">
+    {% if page > 1 %}
+    <a href="?page={{ page|add:"-1" }}" class="ca-button" style="padding:0.4rem 1rem;font-size:0.9rem;">← Zurück</a>
+    {% else %}
+    <span class="ca-button" style="padding:0.4rem 1rem;font-size:0.9rem;opacity:0.4;cursor:default;">← Zurück</span>
+    {% endif %}
+
+    <span style="color:#7a7a7a;">Seite {{ page }} / {{ total_pages }}</span>
+
+    {% if page < total_pages %}
+    <a href="?page={{ page|add:"1" }}" class="ca-button" style="padding:0.4rem 1rem;font-size:0.9rem;">Weiter →</a>
+    {% else %}
+    <span class="ca-button" style="padding:0.4rem 1rem;font-size:0.9rem;opacity:0.4;cursor:default;">Weiter →</span>
+    {% endif %}
+  </div>
+
+  {% else %}
+  <p style="color:#7a7a7a;font-size:0.9rem;">Noch keine Broadcasts gesendet.</p>
+  {% endif %}
+</div>
+{% endblock %}

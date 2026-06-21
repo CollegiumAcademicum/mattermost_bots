@@ -111,3 +111,40 @@ class ConfigViewTest(TestCase):
                 "name": "Alle",
             })
         self.assertEqual(resp.status_code, 302)
+
+
+class HistoryTemplateTest(TestCase):
+    """Test that history.html template renders key content."""
+
+    def setUp(self):
+        self.client = Client()
+        user = User.objects.create_user("admin2", password="pw")
+        group = Group.objects.get_or_create(name="BotAdmins")[0]
+        user.groups.add(group)
+        self.client.login(username="admin2", password="pw")
+
+    def test_history_shows_sender_name(self):
+        with patch("broadcast.admin_dashboard.views.history.admin_client.get_history",
+                   return_value=MOCK_HISTORY):
+            resp = self.client.get("/admin-dashboard/history/")
+        self.assertContains(resp, "alice")
+        self.assertContains(resp, "bob")
+
+    def test_history_shows_message_preview(self):
+        with patch("broadcast.admin_dashboard.views.history.admin_client.get_history",
+                   return_value=MOCK_HISTORY):
+            resp = self.client.get("/admin-dashboard/history/")
+        self.assertContains(resp, "Hello world")
+
+    def test_history_shows_target_channel(self):
+        with patch("broadcast.admin_dashboard.views.history.admin_client.get_history",
+                   return_value=MOCK_HISTORY):
+            resp = self.client.get("/admin-dashboard/history/")
+        self.assertContains(resp, "ch1")
+
+    def test_history_empty_state(self):
+        empty = {"total": 0, "page": 1, "per_page": 20, "results": []}
+        with patch("broadcast.admin_dashboard.views.history.admin_client.get_history",
+                   return_value=empty):
+            resp = self.client.get("/admin-dashboard/history/")
+        self.assertContains(resp, "Noch keine Broadcasts")
