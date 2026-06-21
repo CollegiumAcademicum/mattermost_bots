@@ -116,8 +116,8 @@
         </div>
         <div>
           <label class="ca-label" style="font-size:0.85rem;">Kanäle</label>
-          <select name="channels" multiple class="select is-small"
-            style="width:100%;max-height:250px;">
+          <select name="channels" multiple class="select is-small" size="10"
+            style="width:100%;">
             {% for ch in all_channels %}
             <option value="{{ ch.id }}">{{ ch.display_name }}</option>
             {% endfor %}
