@@ -49,12 +49,18 @@ def tasks_view(request):
 
     # GET
     task_list = []
+    postbot_offline = False
     try:
         data = admin_client.get_tasks()
         for t in data.get("tasks", []):
             t["last_run_display"] = _format_last_run(t.get("last_run"))
             task_list.append(t)
+    except (requests.ConnectionError, requests.Timeout):
+        postbot_offline = True
     except Exception as exc:
         messages.error(request, f"Fehler beim Laden der Aufgaben: {exc}")
 
-    return render(request, "admin_dashboard/tasks.html", {"tasks": task_list})
+    return render(request, "admin_dashboard/tasks.html", {
+        "tasks": task_list,
+        "postbot_offline": postbot_offline,
+    })

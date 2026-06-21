@@ -50,6 +50,9 @@ def confirm(request):
     selected_individual = request.session.get("broadcast_individual", [])
     try:
         channels_data = get_channels()
+    except (http_requests.ConnectionError, http_requests.Timeout):
+        messages.error(request, "Postbot ist nicht erreichbar. Bitte später erneut versuchen.")
+        return redirect("broadcast:compose")
     except Exception as exc:
         logger.error(f"Failed to load channels for confirm: {exc}")
         messages.error(request, "Could not load channels. Please try composing again.")

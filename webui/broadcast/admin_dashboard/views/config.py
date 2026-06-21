@@ -1,3 +1,4 @@
+import requests
 from django.shortcuts import render, redirect
 from django.contrib import messages
 from broadcast.admin_dashboard.services import admin_client
@@ -81,9 +82,12 @@ def config(request):
     # GET
     cfg = {"groups": {}, "private_groups": {}, "whitelist": {}}
     channels_data = {"individual_channels": []}
+    postbot_offline = False
     try:
         cfg = admin_client.get_config()
         channels_data = admin_client.get_channels()
+    except (requests.ConnectionError, requests.Timeout):
+        postbot_offline = True
     except Exception as exc:
         messages.error(request, f"Fehler beim Laden: {exc}")
 
@@ -99,4 +103,5 @@ def config(request):
         "cfg": cfg,
         "sections": sections,
         "all_channels": all_channels,
+        "postbot_offline": postbot_offline,
     })

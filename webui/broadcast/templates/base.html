@@ -17,10 +17,9 @@
   </a>
   {% if user.is_authenticated %}
   <div class="ca-navbar-right">
+    <a href="{% url 'broadcast:compose' %}" class="ca-navbar-admin">Nachricht verfassen</a>
     {% if is_bot_admin %}
-    <a href="/admin-dashboard/history/" class="ca-navbar-admin">Verlauf</a>
-    <a href="/admin-dashboard/config/" class="ca-navbar-admin">Konfiguration</a>
-    <a href="/admin-dashboard/tasks/" class="ca-navbar-admin">Aufgaben</a>
+    <a href="/admin-dashboard/history/" class="ca-navbar-admin">Admin</a>
     {% endif %}
     <span class="ca-navbar-user">{{ user.username }}</span>
     <form method="post" action="{% url 'logout' %}">
@@ -30,6 +29,12 @@
   </div>
   {% endif %}
 </nav>
+
+{% if postbot_offline %}
+<div class="ca-offline-banner">
+  Postbot ist nicht erreichbar — einige Funktionen stehen nicht zur Verfügung.
+</div>
+{% endif %}
 
 <div class="ca-main">
   {% block progress %}{% endblock %}

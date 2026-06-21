@@ -31,6 +31,10 @@ def get_channels() -> dict:
         resp.raise_for_status()
         _cache = resp.json()
         _cache_time = now
+    except (requests.ConnectionError, requests.Timeout) as exc:
+        if not _cache:
+            raise  # no stale data to fall back on — let the view handle it
+        logger.warning(f"postbot unreachable, serving stale channel cache: {exc}")
     except Exception as exc:
         logger.error(f"Failed to fetch channels from postbot API: {exc}")
     return _cache

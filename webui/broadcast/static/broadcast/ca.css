@@ -39,6 +39,31 @@ body {
 }
 .ca-navbar-admin:hover { text-decoration: underline; }
 
+/* ── Offline banner ── */
+@keyframes ca-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+.ca-offline-banner {
+  background: #c0392b;
+  color: white;
+  border-bottom: 3px solid #922b21;
+  padding: 0.85rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 700;
+  text-align: center;
+  letter-spacing: 0.02em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+}
+.ca-offline-banner::before {
+  content: '⚠';
+  font-size: 1.2rem;
+  animation: ca-pulse 2s ease-in-out infinite;
+}
+
 /* ── Main ── */
 .ca-main { flex: 1; padding: 0 1.5rem 3rem; }
 
