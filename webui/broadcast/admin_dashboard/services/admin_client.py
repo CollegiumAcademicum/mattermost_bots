@@ -67,3 +67,50 @@ def get_channels() -> dict:
     )
     resp.raise_for_status()
     return resp.json()
+
+
+def get_tasks() -> dict:
+    """Fetch task list from postbot.
+
+    Returns dict with key: tasks (list of {name, description, last_run, schedule}).
+    Raises requests.HTTPError on non-2xx response.
+    """
+    resp = requests.get(
+        f"{settings.POSTBOT_API_URL}/api/tasks",
+        headers={"Authorization": f"Bearer {settings.POSTBOT_API_SECRET}"},
+        timeout=30,
+    )
+    resp.raise_for_status()
+    return resp.json()
+
+
+def run_task(name: str) -> dict:
+    """Trigger a task manually (fire-and-forget).
+
+    Returns {"ok": True} on success.
+    Raises requests.HTTPError on non-2xx response.
+    """
+    resp = requests.post(
+        f"{settings.POSTBOT_API_URL}/api/tasks/{name}/run",
+        headers={"Authorization": f"Bearer {settings.POSTBOT_API_SECRET}"},
+        timeout=30,
+    )
+    resp.raise_for_status()
+    return resp.json()
+
+
+def set_task_schedule(name: str, cron: str | None) -> dict:
+    """Set or remove a task's cron schedule.
+
+    Pass cron=None to remove the schedule.
+    Returns {"ok": True} on success.
+    Raises requests.HTTPError on non-2xx response (including 422 for bad cron).
+    """
+    resp = requests.put(
+        f"{settings.POSTBOT_API_URL}/api/tasks/{name}/schedule",
+        json={"cron": cron},
+        headers={"Authorization": f"Bearer {settings.POSTBOT_API_SECRET}"},
+        timeout=30,
+    )
+    resp.raise_for_status()
+    return resp.json()

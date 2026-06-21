@@ -200,3 +200,79 @@ class ConfigTemplateTest(TestCase):
                    return_value={"individual_channels": []}):
             resp = self.client.get("/admin-dashboard/config/")
         self.assertContains(resp, "Keine Einträge")
+
+
+MOCK_TASKS = {
+    "tasks": [
+        {
+            "name": "example_task",
+            "description": "Sends weekly digest",
+            "last_run": "2026-06-21T02:00:00+00:00",
+            "schedule": "0 9 * * 1",
+        },
+        {
+            "name": "cleanup_old_logs",
+            "description": "—",
+            "last_run": None,
+            "schedule": None,
+        },
+    ]
+}
+
+
+class AdminClientTasksTest(TestCase):
+    @patch("broadcast.admin_dashboard.services.admin_client.requests.get")
+    def test_get_tasks_calls_correct_url(self, mock_get):
+        mock_resp = MagicMock()
+        mock_resp.json.return_value = MOCK_TASKS
+        mock_get.return_value = mock_resp
+
+        from broadcast.admin_dashboard.services import admin_client
+        result = admin_client.get_tasks()
+
+        mock_get.assert_called_once()
+        call_url = mock_get.call_args[0][0]
+        assert "/api/tasks" in call_url
+        assert result == MOCK_TASKS
+
+    @patch("broadcast.admin_dashboard.services.admin_client.requests.post")
+    def test_run_task_calls_correct_url(self, mock_post):
+        mock_resp = MagicMock()
+        mock_resp.json.return_value = {"ok": True}
+        mock_post.return_value = mock_resp
+
+        from broadcast.admin_dashboard.services import admin_client
+        result = admin_client.run_task("example_task")
+
+        mock_post.assert_called_once()
+        call_url = mock_post.call_args[0][0]
+        assert "/api/tasks/example_task/run" in call_url
+        assert result == {"ok": True}
+
+    @patch("broadcast.admin_dashboard.services.admin_client.requests.put")
+    def test_set_task_schedule_calls_correct_url(self, mock_put):
+        mock_resp = MagicMock()
+        mock_resp.json.return_value = {"ok": True}
+        mock_put.return_value = mock_resp
+
+        from broadcast.admin_dashboard.services import admin_client
+        result = admin_client.set_task_schedule("example_task", "0 9 * * 1")
+
+        mock_put.assert_called_once()
+        call_url = mock_put.call_args[0][0]
+        assert "/api/tasks/example_task/schedule" in call_url
+        call_json = mock_put.call_args[1]["json"]
+        assert call_json == {"cron": "0 9 * * 1"}
+        assert result == {"ok": True}
+
+    @patch("broadcast.admin_dashboard.services.admin_client.requests.put")
+    def test_set_task_schedule_null_sends_none(self, mock_put):
+        mock_resp = MagicMock()
+        mock_resp.json.return_value = {"ok": True}
+        mock_put.return_value = mock_resp
+
+        from broadcast.admin_dashboard.services import admin_client
+        admin_client.set_task_schedule("example_task", None)
+
+        call_json = mock_put.call_args[1]["json"]
+        assert call_json == {"cron": None}
