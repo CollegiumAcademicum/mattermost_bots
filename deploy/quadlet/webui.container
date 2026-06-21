@@ -8,8 +8,8 @@ ContainerName=webui
 Network=internal.network
 PublishPort=8080:8080
 EnvironmentFile=%h/mattermost-bots/.env
-Volume=%h/mattermost-bots/data/webui:/app/data
-Volume=%h/mattermost-bots/data/certs:/app/certs:ro
+Volume=%h/mattermost-bots/data/webui:/app/data:z
+Volume=%h/mattermost-bots/data/certs:/app/certs:ro,z
 
 [Service]
 Restart=always

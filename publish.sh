@@ -8,25 +8,25 @@ WEBUI_IMAGE="philippbtz/mattermost-webui"
 TARGET="${1:-all}"
 VERSION="${2:-}"
 
+PLATFORMS="linux/amd64,linux/arm64"
+
 build_and_push() {
   local image="$1"
   local context="$2"
   local dockerfile="$3"
 
-  echo "==> Building ${image}:latest"
-  docker build -t "${image}:latest" -f "${dockerfile}" "${context}"
-
+  local tags=("-t" "${image}:latest")
   if [[ -n "${VERSION}" ]]; then
-    docker tag "${image}:latest" "${image}:${VERSION}"
+    tags+=("-t" "${image}:${VERSION}")
   fi
 
-  echo "==> Pushing ${image}:latest"
-  docker push "${image}:latest"
-
-  if [[ -n "${VERSION}" ]]; then
-    echo "==> Pushing ${image}:${VERSION}"
-    docker push "${image}:${VERSION}"
-  fi
+  echo "==> Building and pushing ${image} (${PLATFORMS})"
+  docker buildx build \
+    --platform "${PLATFORMS}" \
+    "${tags[@]}" \
+    -f "${dockerfile}" \
+    --push \
+    "${context}"
 }
 
 case "${TARGET}" in

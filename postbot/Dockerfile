@@ -7,6 +7,7 @@ COPY postbot/pyproject.toml postbot/
 COPY postbot/README.md postbot/
 COPY mmbot_framework/pyproject.toml mmbot_framework/
 COPY mmbot_framework/README.md mmbot_framework/
+COPY mmbot_framework/mmbot_framework/ mmbot_framework/mmbot_framework/
 
 RUN uv sync --package mailman
 

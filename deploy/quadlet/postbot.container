@@ -5,8 +5,8 @@ Description=Postbot (Mattermost broadcast bot)
 Image=philippbtz/mattermost-postbot:latest
 ContainerName=postbot
 Network=internal.network
-Volume=%h/mattermost-bots/.env:/app/.env:ro
-Volume=%h/mattermost-bots/data/postbot:/app/data
+Volume=%h/mattermost-bots/.env:/app/.env:ro,z
+Volume=%h/mattermost-bots/data/postbot:/app/data:z
 
 [Service]
 Restart=always

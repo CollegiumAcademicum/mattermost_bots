@@ -8,6 +8,7 @@ dependencies = [
     "django-auth-ldap>=4.8",
     "requests>=2.33",
     "gunicorn>=22.0",
+    "python-dotenv>=1.0",
 ]
 
 [dependency-groups]
