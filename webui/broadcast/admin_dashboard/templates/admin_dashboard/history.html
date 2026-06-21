@@ -3,6 +3,15 @@
 
 {% block content %}
 <div class="ca-card">
+  <!-- In-page tab navigation -->
+  <div class="tabs" style="margin-bottom:1.5rem;">
+    <ul>
+      <li class="is-active"><a href="{% url 'admin_dashboard:history' %}">Verlauf</a></li>
+      <li><a href="{% url 'admin_dashboard:config' %}">Konfiguration</a></li>
+      <li><a href="{% url 'admin_dashboard:tasks' %}">Aufgaben</a></li>
+    </ul>
+  </div>
+
   <h2 class="ca-label" style="font-size:1.3rem;margin-bottom:1rem;">
     Broadcast-Verlauf
     <span style="color:#7a7a7a;font-size:0.9rem;font-weight:400;">

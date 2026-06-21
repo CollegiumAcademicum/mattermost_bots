@@ -3,6 +3,15 @@
 
 {% block content %}
 <div class="ca-card">
+  <!-- In-page tab navigation -->
+  <div class="tabs" style="margin-bottom:1.5rem;">
+    <ul>
+      <li><a href="{% url 'admin_dashboard:history' %}">Verlauf</a></li>
+      <li class="is-active"><a href="{% url 'admin_dashboard:config' %}">Konfiguration</a></li>
+      <li><a href="{% url 'admin_dashboard:tasks' %}">Aufgaben</a></li>
+    </ul>
+  </div>
+
   <h2 class="ca-label" style="font-size:1.3rem;margin-bottom:1rem;">Kanal-Konfiguration</h2>
 
   <!-- Bulma Tabs -->
@@ -139,7 +148,7 @@
       <thead>
         <tr>
           <th>Name</th>
-          <th>Mattermost User-ID</th>
+          <th>Mattermost Channel-ID</th>
           <th>Aliase</th>
           <th style="width:100px;"></th>
         </tr>
@@ -179,9 +188,9 @@
           <label class="ca-label" style="margin:0;font-size:0.85rem;">Name</label>
           <input class="input is-small" type="text" name="name"
             placeholder="Bezeichnung" required style="max-width:180px;">
-          <label class="ca-label" style="margin:0;font-size:0.85rem;">User-ID</label>
+          <label class="ca-label" style="margin:0;font-size:0.85rem;">Channel-ID</label>
           <input class="input is-small" type="text" name="id"
-            placeholder="Mattermost User-ID" required style="max-width:220px;">
+            placeholder="Mattermost Channel-ID" required style="max-width:220px;">
           <label class="ca-label" style="margin:0;font-size:0.85rem;">Aliase</label>
           <input class="input is-small" type="text" name="aliases"
             placeholder="kommagetrennt" style="max-width:180px;">
