@@ -1,0 +1,15 @@
+[Unit]
+Description=Postbot (Mattermost broadcast bot)
+
+[Container]
+Image=philippbtz/mattermost-postbot:latest
+ContainerName=postbot
+Network=internal.network
+Volume=%h/mattermost-bots/.env:/app/.env:ro
+Volume=%h/mattermost-bots/data/postbot:/app/data
+
+[Service]
+Restart=always
+
+[Install]
+WantedBy=default.target
