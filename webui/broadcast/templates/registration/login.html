@@ -25,6 +25,12 @@
   <div class="ca-login-card">
     <div class="ca-login-title">Postbot-Webinterface</div>
 
+    {% if ldap_unavailable %}
+      <div class="ca-message warning">
+        Intranet nicht erreichbar — nur lokale Konten können sich anmelden.
+      </div>
+    {% endif %}
+
     {% if form.errors %}
       <div class="ca-message error">Benutzername oder Passwort ungültig.</div>
     {% endif %}
