@@ -13,6 +13,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "broadcast",
+    "broadcast.admin_dashboard",
 ]
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
