@@ -3,4 +3,5 @@
 **/*.db
 **/logs/
 .git/
-.env*
+.env
+

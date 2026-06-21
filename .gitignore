@@ -61,9 +61,12 @@ local_settings.py
 db.sqlite3
 db.sqlite3-journal
 
-# Postbot runtime data
-data/*.db
-data/*.toml
+# Runtime data (bind-mounted dirs)
+data/postbot/*.db
+data/postbot/*.toml
+data/webui/*.sqlite3
+data/certs/
+data/*/logs/
 
 # Flask stuff:
 instance/
@@ -213,3 +216,4 @@ __marimo__/
 
 # Git worktrees
 .worktrees/
+.superpowers/

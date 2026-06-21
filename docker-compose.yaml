@@ -3,24 +3,9 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    environment:
-      - URL
-      - TOKEN
-      - TEAM_NAME
-      - WEBUI_API_SECRET
-      - SESSION_TTL_SECONDS
-      - SESSION_CLEANUP_INTERVAL_SECONDS
-      - CHANNEL_CACHE_TTL_SECONDS
-      - LOG_LEVEL
-      - CONSOLE_LOG_LEVEL
-      - LOG_FILE
-      - BOT_LOG_CHANNEL_ID
-      - CHANNELS_TOML_PATH=/app/data/channels.toml
-      - DB_PATH=/app/data/broadcast_log.db
-      - SCHEDULER_TOML_PATH=/app/data/scheduler.toml
     volumes:
-      - ./data:/app/data
-      - postbot_logs:/app/logs
+      - ./.env:/app/.env:ro
+      - ./data/postbot:/app/data
     networks:
       - internal
     restart: unless-stopped
@@ -37,6 +22,7 @@ services:
       - LDAP_BIND_PASSWORD
       - LDAP_USER_SEARCH_BASE
       - LDAP_ADMIN_GROUP_DN
+      - LDAP_CA_CERT_PATH
       - POSTBOT_API_URL=http://postbot:8000
       - POSTBOT_API_SECRET=${WEBUI_API_SECRET}
     ports:
@@ -46,13 +32,10 @@ services:
     depends_on:
       - postbot
     volumes:
-      - webui_data:/app/data
+      - ./data/webui:/app/data
+      - ./data/certs:/app/certs:ro
     restart: unless-stopped
 
 networks:
   internal:
     driver: bridge
-
-volumes:
-  postbot_logs:
-  webui_data:
