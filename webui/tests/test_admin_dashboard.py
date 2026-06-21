@@ -276,3 +276,82 @@ class AdminClientTasksTest(TestCase):
 
         call_json = mock_put.call_args[1]["json"]
         assert call_json == {"cron": None}
+
+
+class TasksViewTest(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.user = User.objects.create_user("admin", password="pw")
+        group = Group.objects.create(name="BotAdmins")
+        self.user.groups.add(group)
+        self.client.login(username="admin", password="pw")
+
+    def test_tasks_get_renders_task_list(self):
+        with patch(
+            "broadcast.admin_dashboard.views.tasks.admin_client.get_tasks",
+            return_value=MOCK_TASKS,
+        ):
+            resp = self.client.get("/admin-dashboard/tasks/")
+
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(len(resp.context["tasks"]), 2)
+        self.assertEqual(resp.context["tasks"][0]["name"], "example_task")
+
+    def test_tasks_get_formats_last_run(self):
+        with patch(
+            "broadcast.admin_dashboard.views.tasks.admin_client.get_tasks",
+            return_value=MOCK_TASKS,
+        ):
+            resp = self.client.get("/admin-dashboard/tasks/")
+
+        tasks_by_name = {t["name"]: t for t in resp.context["tasks"]}
+        self.assertIn("2026", tasks_by_name["example_task"]["last_run_display"])
+        self.assertEqual(tasks_by_name["cleanup_old_logs"]["last_run_display"], "Noch nie")
+
+    def test_tasks_get_on_api_error_shows_empty_list(self):
+        with patch(
+            "broadcast.admin_dashboard.views.tasks.admin_client.get_tasks",
+            side_effect=Exception("connection refused"),
+        ):
+            resp = self.client.get("/admin-dashboard/tasks/")
+
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.context["tasks"], [])
+
+    def test_tasks_post_run_calls_run_task_and_redirects(self):
+        with patch(
+            "broadcast.admin_dashboard.views.tasks.admin_client.run_task",
+            return_value={"ok": True},
+        ) as mock_run:
+            resp = self.client.post(
+                "/admin-dashboard/tasks/",
+                {"action": "run", "name": "example_task"},
+            )
+
+        mock_run.assert_called_once_with("example_task")
+        self.assertRedirects(resp, "/admin-dashboard/tasks/")
+
+    def test_tasks_post_set_schedule_calls_set_schedule_and_redirects(self):
+        with patch(
+            "broadcast.admin_dashboard.views.tasks.admin_client.set_task_schedule",
+            return_value={"ok": True},
+        ) as mock_set:
+            resp = self.client.post(
+                "/admin-dashboard/tasks/",
+                {"action": "set_schedule", "name": "example_task", "cron": "0 8 * * 1"},
+            )
+
+        mock_set.assert_called_once_with("example_task", "0 8 * * 1")
+        self.assertRedirects(resp, "/admin-dashboard/tasks/")
+
+    def test_tasks_post_set_schedule_empty_cron_sends_none(self):
+        with patch(
+            "broadcast.admin_dashboard.views.tasks.admin_client.set_task_schedule",
+            return_value={"ok": True},
+        ) as mock_set:
+            self.client.post(
+                "/admin-dashboard/tasks/",
+                {"action": "set_schedule", "name": "example_task", "cron": ""},
+            )
+
+        mock_set.assert_called_once_with("example_task", None)
