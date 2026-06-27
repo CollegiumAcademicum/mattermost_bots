@@ -35,11 +35,8 @@ def get_channels() -> dict:
         for name, entry in bot._private_groups.items()
     }
 
-    # All unique channel IDs across every group, sorted by display name.
-    all_ids: set[str] = set()
-    for entry in list(bot._visible_groups.values()) + list(bot._private_groups.values()):
-        all_ids.update(entry.channels)
-    individual = _resolve(list(all_ids), by_id)
+    # All channels the bot has access to, sorted by display name.
+    individual = _resolve(list(by_id.keys()), by_id)
     individual.sort(key=lambda c: c["display_name"])
 
     return {

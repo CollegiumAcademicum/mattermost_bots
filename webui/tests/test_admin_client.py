@@ -11,8 +11,8 @@ from django.test import TestCase, override_settings
     POSTBOT_API_SECRET="test-secret",
 )
 class AdminClientTest(TestCase):
-    @patch("broadcast.admin_dashboard.services.admin_client.requests.get")
-    def test_get_history_returns_parsed_response(self, mock_get):
+    @patch("broadcast.admin_dashboard.services.admin_client.requests.request")
+    def test_get_history_returns_parsed_response(self, mock_req):
         mock_resp = MagicMock()
         mock_resp.json.return_value = {
             "total": 5,
@@ -27,7 +27,7 @@ class AdminClientTest(TestCase):
                 }
             ],
         }
-        mock_get.return_value = mock_resp
+        mock_req.return_value = mock_resp
 
         from broadcast.admin_dashboard.services.admin_client import get_history
 
@@ -36,11 +36,11 @@ class AdminClientTest(TestCase):
         self.assertEqual(result["total"], 5)
         self.assertEqual(result["page"], 1)
         self.assertEqual(result["per_page"], 20)
-        self.assertIn("Authorization", mock_get.call_args[1]["headers"])
-        self.assertIn("Bearer test-secret", mock_get.call_args[1]["headers"]["Authorization"])
+        self.assertIn("Authorization", mock_req.call_args[1]["headers"])
+        self.assertIn("Bearer test-secret", mock_req.call_args[1]["headers"]["Authorization"])
 
-    @patch("broadcast.admin_dashboard.services.admin_client.requests.get")
-    def test_get_history_passes_page_params(self, mock_get):
+    @patch("broadcast.admin_dashboard.services.admin_client.requests.request")
+    def test_get_history_passes_page_params(self, mock_req):
         mock_resp = MagicMock()
         mock_resp.json.return_value = {
             "total": 5,
@@ -48,38 +48,38 @@ class AdminClientTest(TestCase):
             "per_page": 5,
             "results": [],
         }
-        mock_get.return_value = mock_resp
+        mock_req.return_value = mock_resp
 
         from broadcast.admin_dashboard.services.admin_client import get_history
 
         result = get_history(page=2, per_page=5)
 
-        call_kwargs = mock_get.call_args[1]
+        call_kwargs = mock_req.call_args[1]
         self.assertEqual(call_kwargs["params"]["page"], 2)
         self.assertEqual(call_kwargs["params"]["per_page"], 5)
         self.assertEqual(result["page"], 2)
         self.assertEqual(result["per_page"], 5)
 
-    @patch("broadcast.admin_dashboard.services.admin_client.requests.get")
-    def test_get_history_raises_on_http_error(self, mock_get):
+    @patch("broadcast.admin_dashboard.services.admin_client.requests.request")
+    def test_get_history_raises_on_http_error(self, mock_req):
         mock_resp = MagicMock()
         mock_resp.raise_for_status.side_effect = requests.HTTPError("500")
-        mock_get.return_value = mock_resp
+        mock_req.return_value = mock_resp
 
         from broadcast.admin_dashboard.services.admin_client import get_history
 
         with self.assertRaises(requests.HTTPError):
             get_history()
 
-    @patch("broadcast.admin_dashboard.services.admin_client.requests.get")
-    def test_get_config_returns_parsed_response(self, mock_get):
+    @patch("broadcast.admin_dashboard.services.admin_client.requests.request")
+    def test_get_config_returns_parsed_response(self, mock_req):
         mock_resp = MagicMock()
         mock_resp.json.return_value = {
             "groups": {"G1": [{"id": "id1", "display_name": "Group 1"}]},
             "private_groups": {},
             "whitelist": [],
         }
-        mock_get.return_value = mock_resp
+        mock_req.return_value = mock_resp
 
         from broadcast.admin_dashboard.services.admin_client import get_config
 
@@ -88,24 +88,24 @@ class AdminClientTest(TestCase):
         self.assertIn("groups", result)
         self.assertIn("private_groups", result)
         self.assertIn("whitelist", result)
-        self.assertIn("Bearer test-secret", mock_get.call_args[1]["headers"]["Authorization"])
+        self.assertIn("Bearer test-secret", mock_req.call_args[1]["headers"]["Authorization"])
 
-    @patch("broadcast.admin_dashboard.services.admin_client.requests.get")
-    def test_get_config_raises_on_http_error(self, mock_get):
+    @patch("broadcast.admin_dashboard.services.admin_client.requests.request")
+    def test_get_config_raises_on_http_error(self, mock_req):
         mock_resp = MagicMock()
         mock_resp.raise_for_status.side_effect = requests.HTTPError("500")
-        mock_get.return_value = mock_resp
+        mock_req.return_value = mock_resp
 
         from broadcast.admin_dashboard.services.admin_client import get_config
 
         with self.assertRaises(requests.HTTPError):
             get_config()
 
-    @patch("broadcast.admin_dashboard.services.admin_client.requests.put")
-    def test_put_config_sends_payload(self, mock_put):
+    @patch("broadcast.admin_dashboard.services.admin_client.requests.request")
+    def test_put_config_sends_payload(self, mock_req):
         mock_resp = MagicMock()
         mock_resp.json.return_value = {"ok": True}
-        mock_put.return_value = mock_resp
+        mock_req.return_value = mock_resp
 
         from broadcast.admin_dashboard.services.admin_client import put_config
 
@@ -117,15 +117,15 @@ class AdminClientTest(TestCase):
         result = put_config(config)
 
         self.assertEqual(result["ok"], True)
-        call_kwargs = mock_put.call_args[1]
+        call_kwargs = mock_req.call_args[1]
         self.assertEqual(call_kwargs["json"], config)
         self.assertIn("Bearer test-secret", call_kwargs["headers"]["Authorization"])
 
-    @patch("broadcast.admin_dashboard.services.admin_client.requests.put")
-    def test_put_config_raises_on_http_error(self, mock_put):
+    @patch("broadcast.admin_dashboard.services.admin_client.requests.request")
+    def test_put_config_raises_on_http_error(self, mock_req):
         mock_resp = MagicMock()
         mock_resp.raise_for_status.side_effect = requests.HTTPError("500")
-        mock_put.return_value = mock_resp
+        mock_req.return_value = mock_resp
 
         from broadcast.admin_dashboard.services.admin_client import put_config
 

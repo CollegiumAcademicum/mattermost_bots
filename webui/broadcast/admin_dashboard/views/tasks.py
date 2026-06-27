@@ -11,8 +11,7 @@ from broadcast.admin_dashboard.views import require_bot_admin
 def _format_last_run(last_run_str: str | None) -> str:
     if not last_run_str:
         return "Noch nie"
-    dt = datetime.fromisoformat(last_run_str.replace("Z", "+00:00"))
-    return dt.strftime("%d.%m.%Y %H:%M UTC")
+    return datetime.fromisoformat(last_run_str).strftime("%d.%m.%Y %H:%M UTC")
 
 
 @require_bot_admin
@@ -52,9 +51,10 @@ def tasks_view(request):
     postbot_offline = False
     try:
         data = admin_client.get_tasks()
-        for t in data.get("tasks", []):
-            t["last_run_display"] = _format_last_run(t.get("last_run"))
-            task_list.append(t)
+        task_list = [
+            {**t, "last_run_display": _format_last_run(t.get("last_run"))}
+            for t in data.get("tasks", [])
+        ]
     except (requests.ConnectionError, requests.Timeout):
         postbot_offline = True
     except Exception as exc:

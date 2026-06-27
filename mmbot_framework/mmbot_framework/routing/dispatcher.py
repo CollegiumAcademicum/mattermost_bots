@@ -55,6 +55,7 @@ class CommandDispatcher:
     def __init__(self) -> None:
         self._commands: list[tuple[str, Handler]] = []
         self._default: Handler | None = None
+        self._max_trigger_len: int = 0
 
     def register(self, trigger: str, handler: Handler) -> None:
         """Register *handler* for messages starting with *trigger*.
@@ -64,7 +65,9 @@ class CommandDispatcher:
             handler: Async callable ``(msg: ParsedMessage) -> None``.
         """
         logger.debug("Registering command handler for trigger %r.", trigger)
-        self._commands.append((trigger.lower(), handler))
+        t = trigger.lower()
+        self._commands.append((t, handler))
+        self._max_trigger_len = max(self._max_trigger_len, len(t))
 
     def set_default(self, handler: Handler) -> None:
         """Set the fallback handler invoked when no command matches.
@@ -86,10 +89,10 @@ class CommandDispatcher:
             ``True`` if a handler (or the default) was invoked,
             ``False`` if no command matched and no default is set.
         """
-        text_lower = msg.text.lower()
+        prefix = msg.text[:self._max_trigger_len].lower()
 
         for trigger, handler in self._commands:
-            if text_lower.startswith(trigger):
+            if prefix.startswith(trigger):
                 logger.debug("Matched trigger %r for message %r.", trigger, msg.text[:50])
                 await handler(msg)
                 return True

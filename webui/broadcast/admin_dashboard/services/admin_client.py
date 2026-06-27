@@ -7,110 +7,41 @@ from django.conf import settings
 logger = logging.getLogger(__name__)
 
 
-def get_history(page: int = 1, per_page: int = 20) -> dict:
-    """Fetch paginated broadcast history from postbot.
-
-    Returns dict with keys: total, page, per_page, results.
-    Raises requests.HTTPError on non-2xx response.
-    """
-    resp = requests.get(
-        f"{settings.POSTBOT_API_URL}/api/history",
-        params={"page": page, "per_page": per_page},
+def _call(method: str, path: str, **kwargs) -> dict:
+    resp = requests.request(
+        method,
+        f"{settings.POSTBOT_API_URL}{path}",
         headers={"Authorization": f"Bearer {settings.POSTBOT_API_SECRET}"},
         timeout=30,
+        **kwargs,
     )
     resp.raise_for_status()
     return resp.json()
+
+
+def get_history(page: int = 1, per_page: int = 20) -> dict:
+    return _call("GET", "/api/history", params={"page": page, "per_page": per_page})
 
 
 def get_config() -> dict:
-    """Fetch channel config from postbot.
-
-    Returns dict with keys: groups, private_groups, whitelist.
-    Raises requests.HTTPError on non-2xx response.
-    """
-    resp = requests.get(
-        f"{settings.POSTBOT_API_URL}/api/config",
-        headers={"Authorization": f"Bearer {settings.POSTBOT_API_SECRET}"},
-        timeout=30,
-    )
-    resp.raise_for_status()
-    return resp.json()
+    return _call("GET", "/api/config")
 
 
 def put_config(config: dict) -> dict:
-    """Write channel config to postbot.
-
-    Returns {"ok": True} on success.
-    Raises requests.HTTPError on non-2xx response.
-    """
-    resp = requests.put(
-        f"{settings.POSTBOT_API_URL}/api/config",
-        json=config,
-        headers={"Authorization": f"Bearer {settings.POSTBOT_API_SECRET}"},
-        timeout=30,
-    )
-    resp.raise_for_status()
-    return resp.json()
+    return _call("PUT", "/api/config", json=config)
 
 
 def get_channels() -> dict:
-    """Fetch channel list from postbot.
-
-    Returns dict with keys: individual_channels, groups, etc.
-    Raises requests.HTTPError on non-2xx response.
-    """
-    resp = requests.get(
-        f"{settings.POSTBOT_API_URL}/api/channels",
-        headers={"Authorization": f"Bearer {settings.POSTBOT_API_SECRET}"},
-        timeout=30,
-    )
-    resp.raise_for_status()
-    return resp.json()
+    return _call("GET", "/api/channels")
 
 
 def get_tasks() -> dict:
-    """Fetch task list from postbot.
-
-    Returns dict with key: tasks (list of {name, description, last_run, schedule}).
-    Raises requests.HTTPError on non-2xx response.
-    """
-    resp = requests.get(
-        f"{settings.POSTBOT_API_URL}/api/tasks",
-        headers={"Authorization": f"Bearer {settings.POSTBOT_API_SECRET}"},
-        timeout=30,
-    )
-    resp.raise_for_status()
-    return resp.json()
+    return _call("GET", "/api/tasks")
 
 
 def run_task(name: str) -> dict:
-    """Trigger a task manually (fire-and-forget).
-
-    Returns {"ok": True} on success.
-    Raises requests.HTTPError on non-2xx response.
-    """
-    resp = requests.post(
-        f"{settings.POSTBOT_API_URL}/api/tasks/{name}/run",
-        headers={"Authorization": f"Bearer {settings.POSTBOT_API_SECRET}"},
-        timeout=30,
-    )
-    resp.raise_for_status()
-    return resp.json()
+    return _call("POST", f"/api/tasks/{name}/run")
 
 
 def set_task_schedule(name: str, cron: str | None) -> dict:
-    """Set or remove a task's cron schedule.
-
-    Pass cron=None to remove the schedule.
-    Returns {"ok": True} on success.
-    Raises requests.HTTPError on non-2xx response (including 422 for bad cron).
-    """
-    resp = requests.put(
-        f"{settings.POSTBOT_API_URL}/api/tasks/{name}/schedule",
-        json={"cron": cron},
-        headers={"Authorization": f"Bearer {settings.POSTBOT_API_SECRET}"},
-        timeout=30,
-    )
-    resp.raise_for_status()
-    return resp.json()
+    return _call("PUT", f"/api/tasks/{name}/schedule", json={"cron": cron})

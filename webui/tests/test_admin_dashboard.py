@@ -221,60 +221,60 @@ MOCK_TASKS = {
 
 
 class AdminClientTasksTest(TestCase):
-    @patch("broadcast.admin_dashboard.services.admin_client.requests.get")
-    def test_get_tasks_calls_correct_url(self, mock_get):
+    @patch("broadcast.admin_dashboard.services.admin_client.requests.request")
+    def test_get_tasks_calls_correct_url(self, mock_req):
         mock_resp = MagicMock()
         mock_resp.json.return_value = MOCK_TASKS
-        mock_get.return_value = mock_resp
+        mock_req.return_value = mock_resp
 
         from broadcast.admin_dashboard.services import admin_client
         result = admin_client.get_tasks()
 
-        mock_get.assert_called_once()
-        call_url = mock_get.call_args[0][0]
+        mock_req.assert_called_once()
+        call_url = mock_req.call_args[0][1]
         assert "/api/tasks" in call_url
         assert result == MOCK_TASKS
 
-    @patch("broadcast.admin_dashboard.services.admin_client.requests.post")
-    def test_run_task_calls_correct_url(self, mock_post):
+    @patch("broadcast.admin_dashboard.services.admin_client.requests.request")
+    def test_run_task_calls_correct_url(self, mock_req):
         mock_resp = MagicMock()
         mock_resp.json.return_value = {"ok": True}
-        mock_post.return_value = mock_resp
+        mock_req.return_value = mock_resp
 
         from broadcast.admin_dashboard.services import admin_client
         result = admin_client.run_task("example_task")
 
-        mock_post.assert_called_once()
-        call_url = mock_post.call_args[0][0]
+        mock_req.assert_called_once()
+        call_url = mock_req.call_args[0][1]
         assert "/api/tasks/example_task/run" in call_url
         assert result == {"ok": True}
 
-    @patch("broadcast.admin_dashboard.services.admin_client.requests.put")
-    def test_set_task_schedule_calls_correct_url(self, mock_put):
+    @patch("broadcast.admin_dashboard.services.admin_client.requests.request")
+    def test_set_task_schedule_calls_correct_url(self, mock_req):
         mock_resp = MagicMock()
         mock_resp.json.return_value = {"ok": True}
-        mock_put.return_value = mock_resp
+        mock_req.return_value = mock_resp
 
         from broadcast.admin_dashboard.services import admin_client
         result = admin_client.set_task_schedule("example_task", "0 9 * * 1")
 
-        mock_put.assert_called_once()
-        call_url = mock_put.call_args[0][0]
+        mock_req.assert_called_once()
+        call_url = mock_req.call_args[0][1]
         assert "/api/tasks/example_task/schedule" in call_url
-        call_json = mock_put.call_args[1]["json"]
+        call_json = mock_req.call_args[1]["json"]
         assert call_json == {"cron": "0 9 * * 1"}
         assert result == {"ok": True}
 
-    @patch("broadcast.admin_dashboard.services.admin_client.requests.put")
-    def test_set_task_schedule_null_sends_none(self, mock_put):
+    @patch("broadcast.admin_dashboard.services.admin_client.requests.request")
+    def test_set_task_schedule_null_sends_none(self, mock_req):
         mock_resp = MagicMock()
         mock_resp.json.return_value = {"ok": True}
-        mock_put.return_value = mock_resp
+        mock_req.return_value = mock_resp
 
         from broadcast.admin_dashboard.services import admin_client
         admin_client.set_task_schedule("example_task", None)
 
-        call_json = mock_put.call_args[1]["json"]
+        call_json = mock_req.call_args[1]["json"]
         assert call_json == {"cron": None}
 
 
