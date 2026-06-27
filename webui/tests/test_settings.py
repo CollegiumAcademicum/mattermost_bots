@@ -20,7 +20,7 @@ def _load(env: dict) -> object:
         "DEBUG": "false",
     }
     base_env.update(env)
-    with patch.dict(os.environ, base_env, clear=False), patch("dotenv.load_dotenv"):
+    with patch.dict(os.environ, base_env, clear=True), patch("dotenv.load_dotenv"):
         return importlib.import_module(mod_name)
 
 
