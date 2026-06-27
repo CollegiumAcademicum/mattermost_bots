@@ -43,7 +43,12 @@
       </div>
       <div class="ca-field">
         <label class="ca-label" for="id_password">Intranet-Passwort</label>
-        <input class="ca-input" type="password" name="password" id="id_password" required>
+        <div style="position:relative;">
+          <input class="ca-input" type="password" name="password" id="id_password" required style="padding-right:2.5rem;">
+          <button type="button" id="toggle-password" onclick="(function(){var i=document.getElementById('id_password'),b=document.getElementById('toggle-password');i.type=i.type==='password'?'text':'password';b.setAttribute('aria-label',i.type==='password'?'Passwort anzeigen':'Passwort verbergen');})()" aria-label="Passwort anzeigen" style="position:absolute;right:0.6rem;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;padding:0;color:#7a7a7a;line-height:1;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
       </div>
       <input type="hidden" name="next" value="{{ next }}">
       <button type="submit" class="ca-button">Anmelden</button>
