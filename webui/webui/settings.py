@@ -132,3 +132,44 @@ LDAP_ADMIN_GROUP_DN = os.environ.get("LDAP_ADMIN_GROUP_DN", "")
 # postbot HTTP API
 POSTBOT_API_URL = os.environ.get("POSTBOT_API_URL", "http://localhost:8000")
 POSTBOT_API_SECRET = os.environ.get("POSTBOT_API_SECRET", "")
+
+# --- Production security settings ---
+USE_X_FORWARDED_HOST = True
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
+SECURE_SSL_REDIRECT = os.environ.get("SECURE_SSL_REDIRECT", "false").lower() == "true"
+
+_https = os.environ.get("HTTPS_ENABLED", "false").lower() == "true"
+SESSION_COOKIE_SECURE = _https
+CSRF_COOKIE_SECURE = _https
+
+_csrf_origins = os.environ.get("CSRF_TRUSTED_ORIGINS", "")
+CSRF_TRUSTED_ORIGINS = [o.strip() for o in _csrf_origins.split(",") if o.strip()]
+
+SECURE_HSTS_SECONDS = int(os.environ.get("SECURE_HSTS_SECONDS", "0"))
+SECURE_HSTS_INCLUDE_SUBDOMAINS = SECURE_HSTS_SECONDS > 0
+SECURE_HSTS_PRELOAD = SECURE_HSTS_SECONDS > 0
+
+SECURE_REFERRER_POLICY = "same-origin"
+
+# --- Logging: stdout only ---
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+        },
+    },
+    "loggers": {
+        "django": {
+            "handlers": ["console"],
+            "level": "WARNING",
+        },
+        "django.request": {
+            "handlers": ["console"],
+            "level": "ERROR",
+            "propagate": False,
+        },
+    },
+}
