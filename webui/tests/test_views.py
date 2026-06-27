@@ -146,3 +146,15 @@ class ResultViewTest(TestCase):
         session.save()
         resp = self.client.get(reverse("broadcast:result"))
         self.assertRedirects(resp, reverse("broadcast:compose"))
+
+
+class HealthCheckTest(TestCase):
+    def test_health_returns_200_and_ok(self):
+        resp = self.client.get("/health/")
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.json(), {"status": "ok"})
+
+    def test_health_requires_no_authentication(self):
+        unauthenticated = Client()
+        resp = unauthenticated.get("/health/")
+        self.assertEqual(resp.status_code, 200)
