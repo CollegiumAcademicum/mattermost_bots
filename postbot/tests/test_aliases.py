@@ -174,7 +174,6 @@ class TestResolveTargetsWithAliases:
                 "ch_id_2": {"display_name": "Channel 2", "name": "ch-2"},
             },
             "by_name": {"ch-1": "ch_id_1", "ch-2": "ch_id_2"},
-            "all_rows": [],
         }
         entry.loaded_at = time.time()
         return bot
@@ -246,7 +245,6 @@ class TestHandleChannelsAliasesColumn:
                 },
             },
             "by_name": {},
-            "all_rows": [],
         }
         entry.loaded_at = time.time()
         return bot

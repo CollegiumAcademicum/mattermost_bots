@@ -51,10 +51,6 @@ _CACHE_DATA = {
         "private-channel": "ch_id_3",
         "whitelisted": "whitelisted_id",
     },
-    "all_rows": [
-        "| `Test Channel 1` | test-channel-1 | `ch_id_1` | Test Team |",
-        "| `Test Channel 2` | test-channel-2 | `ch_id_2` | Test Team |",
-    ],
 }
 
 
@@ -150,7 +146,6 @@ class TestLoadChannelCache:
         }
         assert result["by_name"]["general"] == "ch1"
         assert result["by_name"]["random"] == "ch2"
-        assert len(result["all_rows"]) == 2
 
     @pytest.mark.anyio
     async def test_skips_channels_without_team_id(self, bot):
@@ -171,7 +166,6 @@ class TestLoadChannelCache:
 
         assert "dm1" not in result["by_id"]
         assert "dm-channel" not in result["by_name"]
-        assert result["all_rows"] == []
 
     @pytest.mark.anyio
     async def test_covers_multiple_teams(self, bot):

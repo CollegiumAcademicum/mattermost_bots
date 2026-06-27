@@ -108,6 +108,21 @@ _HELP_MESSAGE = (
 )
 
 
+# ── Helpers ───────────────────────────────────────────────────────────────────
+
+
+def format_broadcast_message(
+    sender: str,
+    body: str,
+    bot_username: str | None = None,
+) -> str:
+    """Return the standard broadcast message text."""
+    text = f"📢 **Message from {sender}**\n\n\n{body}\n\n\n\n*--- END of Message ---*\n"
+    if bot_username:
+        text += f"*To use my services (@{bot_username}) just DM me*"
+    return text
+
+
 # ── Bot ───────────────────────────────────────────────────────────────────────
 
 
@@ -265,10 +280,7 @@ class PostBot(BaseBot):
         console_level = getattr(
             logging, self.config.console_log_level, logging.WARNING
         )
-        print("Logging level:", file_level, console_level)
-
         pathlib.Path(self.config.log_file).parent.mkdir(parents=True, exist_ok=True)
-        print("Logging file path:", str(self.config.log_file))
         stream_handler = logging.StreamHandler()
         stream_handler.setLevel(console_level)
 
@@ -850,11 +862,10 @@ class PostBot(BaseBot):
             msg: The ``yes`` confirmation message (provides sender metadata).
         """
         logger.info(f"User @{msg.sender_name} confirmed broadcast.")
-        broadcast_text = (
-            f"📢 **Message from @{msg.sender_name}**\n\n\n"
-            f"{session.data['message']}"
-            f"\n\n\n\n*--- END of Message ---*\n"
-            f"*To use my services (@{self._bot_username}) just DM me*"
+        broadcast_text = format_broadcast_message(
+            f"@{msg.sender_name}",
+            session.data["message"],
+            bot_username=self._bot_username,
         )
 
         # Download all attached files once (they'll be re-uploaded per channel).
@@ -1182,15 +1193,11 @@ class PostBot(BaseBot):
         - ``"by_id"`` — maps channel ID → info dict with ``name``,
           ``display_name``, ``team_name``, and ``team_id``.
         - ``"by_name"`` — maps channel system name → channel ID.
-        - ``"all_rows"`` — pre-formatted Markdown table rows for ``!channels``,
-          built here so ``!channels`` is a zero-API-call string join.
-
         Returns:
-            Dict with keys ``"by_id"``, ``"by_name"``, ``"all_rows"``.
+            Dict with keys ``"by_id"`` and ``"by_name"``.
         """
         by_id: dict[str, dict] = {}
         by_name: dict[str, str] = {}
-        all_rows: list[str] = []
 
         teams = self.driver.teams.get_user_teams("me")
         for team in teams:
@@ -1208,13 +1215,9 @@ class PostBot(BaseBot):
                 }
                 by_id[cid] = info
                 by_name[ch["name"]] = cid
-                all_rows.append(
-                    f"| `{ch['display_name']}` | {ch['name']} "
-                    f"| `{cid}` | {team_name} |"
-                )
 
         logger.info(f"Channel cache loaded: {len(by_id)} channel(s).")
-        return {"by_id": by_id, "by_name": by_name, "all_rows": all_rows}
+        return {"by_id": by_id, "by_name": by_name}
 
     async def _add_group_impl(self, msg: ParsedMessage, *, private: bool) -> None:
         """Shared implementation for !add_group and !add_private_group.
@@ -1231,7 +1234,6 @@ class PostBot(BaseBot):
                 otherwise to ``groups``.
         """
         trigger = "!add_private_group" if private else "!add_group"
-        json_key = "private_groups" if private else "groups"
         target_dict = self._private_groups if private else self._visible_groups
 
         payload_str = msg.text[len(trigger):].strip()
@@ -1246,7 +1248,7 @@ class PostBot(BaseBot):
         try:
             new_groups: dict = toml.loads(payload_str)
         except toml.TomlDecodeError as exc:
-            logger.error(f"Invalid JSON in {trigger} command: {exc}")
+            logger.error(f"Invalid TOML in {trigger} command: {exc}")
             self._post(
                 msg.channel_id,
                 "❌ Invalid JSON format. Please check your syntax.",

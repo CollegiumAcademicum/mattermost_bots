@@ -1,5 +1,5 @@
 """Tests for POST /api/broadcast."""
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 from fastapi.testclient import TestClient
@@ -20,6 +20,12 @@ def reset_bot():
     original = context._bot
     yield
     context._bot = original
+
+
+@pytest.fixture(autouse=True)
+def mock_log_broadcast():
+    with patch("api.routes.broadcast.db_module.log_broadcast"):
+        yield
 
 
 def test_broadcast_sends_to_all_channels():

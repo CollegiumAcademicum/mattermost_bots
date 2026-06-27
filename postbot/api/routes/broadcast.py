@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field
 
 from api.auth import verify_api_secret
 from api.context import get_bot
+from bot import format_broadcast_message
 import database as db_module
 
 logger = logging.getLogger(__name__)
@@ -28,11 +29,7 @@ class BroadcastResponse(BaseModel):
 def post_broadcast(body: BroadcastRequest) -> BroadcastResponse:
     """Send `body.message` to each channel in `body.channel_ids`."""
     bot = get_bot()
-    broadcast_text = (
-        f"📢 **Message from {body.sender}**\n\n\n"
-        f"{body.message}"
-        f"\n\n\n\n*--- END of Message ---*\n"
-    )
+    broadcast_text = format_broadcast_message(body.sender, body.message)
     sent = 0
     failed = 0
     errors: list[str] = []

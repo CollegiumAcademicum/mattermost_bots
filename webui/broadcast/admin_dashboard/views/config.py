@@ -24,6 +24,10 @@ def _build_sections(cfg: dict, by_id: dict) -> list:
     return sections
 
 
+def _parse_aliases(raw: str) -> list[str]:
+    return [a.strip() for a in raw.split(",") if a.strip()]
+
+
 def _handle_post(request, cfg: dict) -> dict:
     """Process a POST action and return updated config dict."""
     action = request.POST.get("action")
@@ -36,8 +40,7 @@ def _handle_post(request, cfg: dict) -> dict:
     elif action == "add_group":
         name = request.POST.get("name", "").strip()
         channels = request.POST.getlist("channels")
-        aliases_raw = request.POST.get("aliases", "")
-        aliases = [a.strip() for a in aliases_raw.split(",") if a.strip()]
+        aliases = _parse_aliases(request.POST.get("aliases", ""))
         if name:
             cfg.setdefault(section, {})[name] = {"channels": channels, "aliases": aliases}
 
@@ -45,8 +48,7 @@ def _handle_post(request, cfg: dict) -> dict:
         old_name = request.POST.get("old_name")
         new_name = request.POST.get("name", "").strip()
         channels = request.POST.getlist("channels")
-        aliases_raw = request.POST.get("aliases", "")
-        aliases = [a.strip() for a in aliases_raw.split(",") if a.strip()]
+        aliases = _parse_aliases(request.POST.get("aliases", ""))
         if old_name in cfg.get(section, {}):
             cfg[section].pop(old_name)
             if new_name:
@@ -59,8 +61,7 @@ def _handle_post(request, cfg: dict) -> dict:
     elif action == "add_whitelist":
         name = request.POST.get("name", "").strip()
         user_id = request.POST.get("id", "").strip()
-        aliases_raw = request.POST.get("aliases", "")
-        aliases = [a.strip() for a in aliases_raw.split(",") if a.strip()]
+        aliases = _parse_aliases(request.POST.get("aliases", ""))
         if name and user_id:
             cfg.setdefault("whitelist", {})[name] = {"id": user_id, "aliases": aliases}
 

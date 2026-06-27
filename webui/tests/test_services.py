@@ -11,37 +11,33 @@ from django.test import TestCase, override_settings
     POSTBOT_API_SECRET="test-secret",
 )
 class PostbotClientTest(TestCase):
-    @patch("broadcast.services.postbot_client.requests.post")
-    def test_send_broadcast_success(self, mock_post):
-        mock_resp = MagicMock()
-        mock_resp.json.return_value = {"sent": 2, "failed": 0, "errors": []}
-        mock_post.return_value = mock_resp
+    @patch("broadcast.admin_dashboard.services.admin_client._call")
+    def test_send_broadcast_success(self, mock_call):
+        mock_call.return_value = {"sent": 2, "failed": 0, "errors": []}
 
         from broadcast.services.postbot_client import send_broadcast
 
         result = send_broadcast("Hello world", ["id1", "id2"], sender="alice")
 
         self.assertEqual(result["sent"], 2)
-        call_kwargs = mock_post.call_args[1]
-        self.assertEqual(call_kwargs["json"]["message"], "Hello world")
-        self.assertEqual(call_kwargs["json"]["channel_ids"], ["id1", "id2"])
-        self.assertEqual(call_kwargs["json"]["sender"], "alice")
-        self.assertIn("Bearer test-secret", call_kwargs["headers"]["Authorization"])
+        mock_call.assert_called_once_with(
+            "POST",
+            "/api/broadcast",
+            json={"message": "Hello world", "channel_ids": ["id1", "id2"], "sender": "alice"},
+        )
 
-    @patch("broadcast.services.postbot_client.requests.post")
-    def test_send_broadcast_connection_error_raises(self, mock_post):
-        mock_post.side_effect = requests.ConnectionError("unreachable")
+    @patch("broadcast.admin_dashboard.services.admin_client._call")
+    def test_send_broadcast_connection_error_raises(self, mock_call):
+        mock_call.side_effect = requests.ConnectionError("unreachable")
 
         from broadcast.services.postbot_client import send_broadcast
 
         with self.assertRaises(requests.ConnectionError):
             send_broadcast("Hello", ["id1"])
 
-    @patch("broadcast.services.postbot_client.requests.post")
-    def test_send_broadcast_http_error_raises(self, mock_post):
-        mock_resp = MagicMock()
-        mock_resp.raise_for_status.side_effect = requests.HTTPError("500")
-        mock_post.return_value = mock_resp
+    @patch("broadcast.admin_dashboard.services.admin_client._call")
+    def test_send_broadcast_http_error_raises(self, mock_call):
+        mock_call.side_effect = requests.HTTPError("500")
 
         from broadcast.services.postbot_client import send_broadcast
 

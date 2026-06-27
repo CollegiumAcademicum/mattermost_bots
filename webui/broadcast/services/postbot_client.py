@@ -1,10 +1,5 @@
 """HTTP client for the postbot broadcast API."""
-import logging
-
-import requests
-from django.conf import settings
-
-logger = logging.getLogger(__name__)
+from broadcast.admin_dashboard.services import admin_client
 
 
 def send_broadcast(
@@ -17,11 +12,8 @@ def send_broadcast(
     Raises requests.ConnectionError if postbot is unreachable.
     Raises requests.HTTPError on non-2xx response.
     """
-    resp = requests.post(
-        f"{settings.POSTBOT_API_URL}/api/broadcast",
+    return admin_client._call(
+        "POST",
+        "/api/broadcast",
         json={"message": message, "channel_ids": channel_ids, "sender": sender},
-        headers={"Authorization": f"Bearer {settings.POSTBOT_API_SECRET}"},
-        timeout=30,
     )
-    resp.raise_for_status()
-    return resp.json()

@@ -25,7 +25,6 @@ def _make_bot(secret: str = "test-secret") -> MagicMock:
             "id3": {"display_name": "Private Channel", "name": "private-ch", "team_name": "T", "team_id": "t1"},
         },
         "by_name": {},
-        "all_rows": [],
     }
     return bot
 
