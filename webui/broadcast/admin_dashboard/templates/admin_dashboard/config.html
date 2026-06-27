@@ -53,7 +53,7 @@
               Bearbeiten
             </button>
             <form method="post" style="display:inline;"
-              onsubmit="return confirm('Gruppe &quot;{{ entry.name }}&quot; löschen?')">
+              onsubmit="return confirm('Gruppe \u0022{{ entry.name|escapejs }}\u0022 löschen?')">
               {% csrf_token %}
               <input type="hidden" name="action" value="delete_group">
               <input type="hidden" name="section" value="{{ section.key }}">
@@ -161,7 +161,7 @@
           <td style="font-size:0.85rem;color:#7a7a7a;">{{ entry.aliases|join:", " }}</td>
           <td>
             <form method="post" style="display:inline;"
-              onsubmit="return confirm('Eintrag &quot;{{ name }}&quot; löschen?')">
+              onsubmit="return confirm('Eintrag \u0022{{ name|escapejs }}\u0022 löschen?')">
               {% csrf_token %}
               <input type="hidden" name="action" value="delete_whitelist">
               <input type="hidden" name="name" value="{{ name }}">
