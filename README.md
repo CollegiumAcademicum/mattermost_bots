@@ -58,7 +58,7 @@ browser instead of via direct message to the bot.
 
 ### Prerequisites
 
-- Docker (or Podman with `docker-compose` compatibility)
+- Docker, or Podman with podman-compose
 - A running Mattermost instance with a bot account and its access token
 - An LDAP server (optional; local Django accounts work without it)
 
