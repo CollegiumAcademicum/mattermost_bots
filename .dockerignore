@@ -5,6 +5,7 @@
 .git/
 .env
 webui/
+!webui/pyproject.toml
 docs/
 old/
 data/
