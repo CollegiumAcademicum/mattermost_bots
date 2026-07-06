@@ -4,6 +4,10 @@ version = "0.1.0"
 description = "Mattermost bots monorepo"
 readme = "README.md"
 requires-python = ">=3.14"
+dependencies = [
+    "mailman",
+    "mmbot-framework",
+]
 
 [tool.uv.workspace]
 members = ["postbot", "mmbot_framework", "webui"]
@@ -11,4 +15,3 @@ members = ["postbot", "mmbot_framework", "webui"]
 [tool.uv.sources]
 mailman = { workspace = true }
 mmbot-framework = { workspace = true }
-webui = { workspace = true }
