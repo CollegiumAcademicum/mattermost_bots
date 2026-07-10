@@ -28,11 +28,11 @@ def get_channels() -> dict:
 
     groups = {
         name: _resolve(entry.channels, by_id)
-        for name, entry in bot._visible_groups.items()
+        for name, entry in sorted(bot._visible_groups.items())
     }
     private_groups = {
         name: _resolve(entry.channels, by_id)
-        for name, entry in bot._private_groups.items()
+        for name, entry in sorted(bot._private_groups.items())
     }
 
     # All channels the bot has access to, sorted by display name.

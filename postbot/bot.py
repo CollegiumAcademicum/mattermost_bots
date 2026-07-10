@@ -118,7 +118,7 @@ def format_broadcast_message(
 ) -> str:
     """Return the standard broadcast message text."""
     text = f"📢 **Message from {sender}**\n\n\n{body}\n\n\n\n*--- END of Message ---*\n"
-    text += f"*To use my services just DM me or visit my WebUI: 10.10.200:8080 (currently only working from within the CA)*"
+    text += f"*To use my services just DM me or visit my [WebUI](https://postbot.ca-hd.de)*"
     return text
 
 
@@ -520,7 +520,7 @@ class PostBot(BaseBot):
         """Return formatted group/channel lines and whether any cache miss occurred."""
         lines: list[str] = []
         used_fallback = False
-        for name, entry in groups.items():
+        for name, entry in sorted(groups.items()):
             resolved: list[str] = []
             for cid in entry.channels:
                 if ch_cache and cid in ch_cache["by_id"]:
