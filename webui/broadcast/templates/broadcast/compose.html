@@ -63,10 +63,10 @@
     <p style="color:#7a7a7a;font-size:0.9rem;">Keine Gruppen verfügbar.</p>
     {% endif %}
 
-    {% if channels_data.private_groups %}
+    {% if private_groups %}
     <p class="ca-label" style="margin-top:1.25rem;">Private Gruppen</p>
     <div class="group-grid">
-      {% for group_name, channels in channels_data.private_groups.items %}
+      {% for group_name, channels in private_groups.items %}
       <div class="group-card" id="pg-{{ forloop.counter0 }}">
         <div class="group-card-top" onclick="toggleSelect('pg-{{ forloop.counter0 }}')">
           <div class="group-check"></div>

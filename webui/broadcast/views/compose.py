@@ -6,6 +6,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect, render
 
+from broadcast.admin_dashboard.views import _is_bot_admin
 from broadcast.services.channel_service import get_channels
 
 logger = logging.getLogger(__name__)
@@ -41,5 +42,6 @@ def compose(request):
 
     return render(request, "broadcast/compose.html", {
         "channels_data": channels_data,
+        "private_groups": channels_data.get("private_groups") if _is_bot_admin(request.user) else None,
         "postbot_offline": postbot_offline,
     })
