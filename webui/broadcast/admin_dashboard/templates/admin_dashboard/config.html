@@ -81,15 +81,16 @@
               </div>
               <div>
                 <label class="ca-label" style="font-size:0.85rem;">Kanäle</label>
-                <select name="channels" multiple size="10"
-                  style="width:100%;height:220px;font-size:0.85rem;border:1px solid #dbdbdb;border-radius:4px;padding:4px;">
+                <div style="overflow-y:auto;max-height:220px;border:1px solid #dbdbdb;border-radius:4px;padding:4px;">
                   {% for ch in all_channels %}
-                  <option value="{{ ch.id }}"
-                    {% if ch.id in entry.channels %}selected{% endif %}>
+                  <label style="display:flex;align-items:center;gap:0.4rem;padding:2px 4px;font-size:0.85rem;cursor:pointer;">
+                    <input type="checkbox" name="channels" value="{{ ch.id }}"
+                      {% if ch.id in entry.channels %}checked{% endif %}
+                      style="accent-color:var(--ca-teal);">
                     {{ ch.display_name }}
-                  </option>
+                  </label>
                   {% endfor %}
-                </select>
+                </div>
               </div>
               <div>
                 <button type="submit" class="button is-small is-primary">Speichern</button>
@@ -125,12 +126,15 @@
         </div>
         <div>
           <label class="ca-label" style="font-size:0.85rem;">Kanäle</label>
-          <select name="channels" multiple size="10"
-            style="width:100%;height:220px;font-size:0.85rem;border:1px solid #dbdbdb;border-radius:4px;padding:4px;">
+          <div style="overflow-y:auto;max-height:220px;border:1px solid #dbdbdb;border-radius:4px;padding:4px;">
             {% for ch in all_channels %}
-            <option value="{{ ch.id }}">{{ ch.display_name }}</option>
+            <label style="display:flex;align-items:center;gap:0.4rem;padding:2px 4px;font-size:0.85rem;cursor:pointer;">
+              <input type="checkbox" name="channels" value="{{ ch.id }}"
+                style="accent-color:var(--ca-teal);">
+              {{ ch.display_name }}
+            </label>
             {% endfor %}
-          </select>
+          </div>
         </div>
         <div>
           <button type="submit" class="ca-button">Hinzufügen</button>
