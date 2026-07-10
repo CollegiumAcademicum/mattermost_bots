@@ -234,3 +234,17 @@ body {
 }
 .ca-footer-links a:hover { background: var(--ca-teal-dark); }
 .ca-footer-email { font-size: 0.82rem; color: #7a7a7a; }
+
+/* ── Mobile ── */
+@media (max-width: 600px) {
+  .ca-navbar { height: auto; flex-wrap: wrap; padding: 0.5rem 1rem; gap: 0.5rem; }
+  .ca-navbar-right { flex-wrap: wrap; gap: 0.5rem; font-size: 0.8rem; }
+  .ca-main { padding: 0 0.75rem 2rem; }
+  .ca-card { padding: 1rem; }
+  .group-grid { grid-template-columns: 1fr; }
+  .ca-button-row { flex-direction: column; }
+  .ca-button-row .ca-button,
+  .ca-button-row .ca-button-outline { width: 100%; text-align: center; }
+  /* admin tables without an overflow wrapper (config page) */
+  .ca-card .table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+}
