@@ -347,6 +347,16 @@ dev = [
 name = "mattermost-bots"
 version = "0.1.0"
 source = { virtual = "." }
+dependencies = [
+    { name = "mailman" },
+    { name = "mmbot-framework" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "mailman", editable = "postbot" },
+    { name = "mmbot-framework", editable = "mmbot_framework" },
+]
 
 [[package]]
 name = "mattermostdriver"
