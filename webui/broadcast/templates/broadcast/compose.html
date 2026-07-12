@@ -76,7 +76,7 @@
             <li>
               <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;">
                 <input type="checkbox" class="channel-checkbox" value="{{ ch.id }}"
-                  style="accent-color:var(--ca-teal);" checked>
+                  style="accent-color:var(--ca-teal);">
                 {{ ch.display_name }}
               </label>
             </li>
@@ -114,7 +114,7 @@
             <li>
               <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;">
                 <input type="checkbox" class="channel-checkbox" value="{{ ch.id }}"
-                  style="accent-color:var(--ca-teal);" checked>
+                  style="accent-color:var(--ca-teal);">
                 {{ ch.display_name }}
               </label>
             </li>
@@ -132,15 +132,23 @@
 </div>
 
 <script>
+function setGroupSelected(card, on) {
+  card.classList.toggle('selected', on);
+  card.querySelector('input[name=groups]').checked = on;
+  card.querySelector('.group-check').textContent = on ? '✓' : '';
+}
 function toggleSelect(id) {
   const card = document.getElementById(id);
-  card.classList.toggle('selected');
-  const isSelected = card.classList.contains('selected');
-  card.querySelector('input[name=groups]').checked = isSelected;
-  card.querySelector('.group-check').textContent = isSelected ? '✓' : '';
-  // reset channel exclusions whenever group selection changes
-  card.querySelectorAll('.channel-checkbox').forEach(cb => cb.checked = true);
+  const on = !card.classList.contains('selected');
+  setGroupSelected(card, on);
+  card.querySelectorAll('.channel-checkbox').forEach(cb => cb.checked = on);
 }
+document.querySelectorAll('.channel-checkbox').forEach(cb => {
+  cb.addEventListener('change', function() {
+    const card = this.closest('.group-card');
+    setGroupSelected(card, card.querySelectorAll('.channel-checkbox:checked').length > 0);
+  });
+});
 function toggleChannels(id) {
   const el = document.getElementById(id);
   el.classList.toggle('open');
