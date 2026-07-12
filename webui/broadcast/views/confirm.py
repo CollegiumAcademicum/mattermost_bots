@@ -16,8 +16,10 @@ def _resolve_channel_ids(
     selected_groups: list[str],
     selected_individual: list[str],
     channels_data: dict,
+    excluded_ids: set[str] | None = None,
 ) -> tuple[list[str], list[str]]:
     """Return (deduplicated channel_ids, human-readable names) from session selections."""
+    excluded_ids = excluded_ids or set()
     channel_ids: set[str] = set()
     resolved_names: list[str] = []
 
@@ -27,7 +29,7 @@ def _resolve_channel_ids(
     }
     for group_name in selected_groups:
         for ch in all_groups.get(group_name, []):
-            if ch["id"] not in channel_ids:
+            if ch["id"] not in channel_ids and ch["id"] not in excluded_ids:
                 channel_ids.add(ch["id"])
                 resolved_names.append(f"{ch['display_name']} (group: {group_name})")
 
@@ -48,6 +50,7 @@ def confirm(request):
 
     selected_groups = request.session.get("broadcast_groups", [])
     selected_individual = request.session.get("broadcast_individual", [])
+    excluded_ids = set(request.session.get("broadcast_excluded", []))
     try:
         channels_data = get_channels()
     except (http_requests.ConnectionError, http_requests.Timeout):
@@ -58,7 +61,7 @@ def confirm(request):
         messages.error(request, "Could not load channels. Please try composing again.")
         return redirect("broadcast:compose")
     channel_ids, resolved_names = _resolve_channel_ids(
-        selected_groups, selected_individual, channels_data
+        selected_groups, selected_individual, channels_data, excluded_ids
     )
 
     if request.method == "POST":
@@ -70,7 +73,7 @@ def confirm(request):
                 result = send_broadcast(
                     message, channel_ids, sender=request.user.username
                 )
-                for key in ("broadcast_message", "broadcast_groups", "broadcast_individual"):
+                for key in ("broadcast_message", "broadcast_groups", "broadcast_individual", "broadcast_excluded"):
                     request.session.pop(key, None)
                 request.session["broadcast_result"] = result
                 return redirect("broadcast:result")

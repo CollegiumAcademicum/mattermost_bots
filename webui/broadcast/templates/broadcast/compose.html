@@ -31,6 +31,27 @@
 
     <hr class="ca-divider">
 
+    {% if channels_data.individual_channels %}
+    <details>
+      <summary style="cursor:pointer;color:var(--ca-teal);font-weight:600;font-size:0.9rem;user-select:none;">
+        Einzelne Kanäle auswählen
+      </summary>
+      <div style="margin-top:0.75rem;display:flex;flex-direction:column;gap:0.35rem;">
+        {% for ch in channels_data.individual_channels %}
+        <label style="display:flex;align-items:center;gap:0.5rem;font-size:0.9rem;cursor:pointer;">
+          <input type="checkbox" name="individual_channels" value="{{ ch.id }}"
+            style="accent-color:var(--ca-teal);">
+          {{ ch.display_name }}
+          {% if ch.display_name != ch.channel_name %}
+          <span style="color:#7a7a7a;font-size:0.8rem;">({{ ch.channel_name }})</span>
+          {% endif %}
+        </label>
+        {% endfor %}
+      </div>
+    </details>
+    <hr class="ca-divider">
+    {% endif %}
+
     <label class="ca-label">Gruppen</label>
     {% if channels_data.groups %}
     <div class="group-grid">
@@ -52,7 +73,13 @@
         <div class="group-channels" id="g-{{ forloop.counter0 }}c">
           <ul>
             {% for ch in channels %}
-            <li>{{ ch.display_name }}</li>
+            <li>
+              <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;">
+                <input type="checkbox" class="channel-checkbox" value="{{ ch.id }}"
+                  style="accent-color:var(--ca-teal);" checked>
+                {{ ch.display_name }}
+              </label>
+            </li>
             {% endfor %}
           </ul>
         </div>
@@ -84,34 +111,19 @@
         <div class="group-channels" id="pg-{{ forloop.counter0 }}c">
           <ul>
             {% for ch in channels %}
-            <li>{{ ch.display_name }}</li>
+            <li>
+              <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;">
+                <input type="checkbox" class="channel-checkbox" value="{{ ch.id }}"
+                  style="accent-color:var(--ca-teal);" checked>
+                {{ ch.display_name }}
+              </label>
+            </li>
             {% endfor %}
           </ul>
         </div>
       </div>
       {% endfor %}
     </div>
-    {% endif %}
-
-    {% if channels_data.individual_channels %}
-    <hr class="ca-divider">
-    <details>
-      <summary style="cursor:pointer;color:var(--ca-teal);font-weight:600;font-size:0.9rem;user-select:none;">
-        Einzelne Kanäle auswählen
-      </summary>
-      <div style="margin-top:0.75rem;display:flex;flex-direction:column;gap:0.35rem;">
-        {% for ch in channels_data.individual_channels %}
-        <label style="display:flex;align-items:center;gap:0.5rem;font-size:0.9rem;cursor:pointer;">
-          <input type="checkbox" name="individual_channels" value="{{ ch.id }}"
-            style="accent-color:var(--ca-teal);">
-          {{ ch.display_name }}
-          {% if ch.display_name != ch.channel_name %}
-          <span style="color:#7a7a7a;font-size:0.8rem;">({{ ch.channel_name }})</span>
-          {% endif %}
-        </label>
-        {% endfor %}
-      </div>
-    </details>
     {% endif %}
 
     <hr class="ca-divider">
@@ -123,10 +135,11 @@
 function toggleSelect(id) {
   const card = document.getElementById(id);
   card.classList.toggle('selected');
-  const chk = card.querySelector('input[type=checkbox]');
-  chk.checked = card.classList.contains('selected');
-  card.querySelector('.group-check').textContent =
-    card.classList.contains('selected') ? '✓' : '';
+  const isSelected = card.classList.contains('selected');
+  card.querySelector('input[name=groups]').checked = isSelected;
+  card.querySelector('.group-check').textContent = isSelected ? '✓' : '';
+  // reset channel exclusions whenever group selection changes
+  card.querySelectorAll('.channel-checkbox').forEach(cb => cb.checked = true);
 }
 function toggleChannels(id) {
   const el = document.getElementById(id);
@@ -136,5 +149,12 @@ function toggleChannels(id) {
     ? btn.innerHTML.replace('▾', '▴')
     : btn.innerHTML.replace('▴', '▾');
 }
+document.getElementById('compose-form').addEventListener('submit', function() {
+  document.querySelectorAll('.group-card.selected .channel-checkbox:not(:checked)').forEach(cb => {
+    const h = document.createElement('input');
+    h.type = 'hidden'; h.name = 'excluded_channels'; h.value = cb.value;
+    this.appendChild(h);
+  });
+});
 </script>
 {% endblock %}

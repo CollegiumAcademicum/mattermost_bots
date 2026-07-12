@@ -18,6 +18,7 @@ def compose(request):
         message = request.POST.get("message", "").strip()
         selected_groups = request.POST.getlist("groups")
         selected_individual = request.POST.getlist("individual_channels")
+        excluded_channels = request.POST.getlist("excluded_channels")
 
         if not message:
             messages.error(request, "Message cannot be empty.")
@@ -27,6 +28,7 @@ def compose(request):
             request.session["broadcast_message"] = message
             request.session["broadcast_groups"] = selected_groups
             request.session["broadcast_individual"] = selected_individual
+            request.session["broadcast_excluded"] = excluded_channels
             return redirect("broadcast:confirm")
 
     postbot_offline = False
