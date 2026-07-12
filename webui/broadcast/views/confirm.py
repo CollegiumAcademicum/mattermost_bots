@@ -69,9 +69,10 @@ def confirm(request):
         if action == "back":
             return redirect("broadcast:compose")
         if action == "send":
+            send_ids = request.POST.getlist("send_channels") if "send_channels" in request.POST else channel_ids
             try:
                 result = send_broadcast(
-                    message, channel_ids, sender=request.user.username
+                    message, send_ids, sender=request.user.username
                 )
                 for key in ("broadcast_message", "broadcast_groups", "broadcast_individual", "broadcast_excluded"):
                     request.session.pop(key, None)
@@ -87,5 +88,5 @@ def confirm(request):
     return render(
         request,
         "broadcast/confirm.html",
-        {"message": message, "resolved_names": resolved_names, "channel_ids": channel_ids},
+        {"message": message, "channels": list(zip(channel_ids, resolved_names))},
     )

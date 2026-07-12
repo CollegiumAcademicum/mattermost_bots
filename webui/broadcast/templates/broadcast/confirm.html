@@ -27,11 +27,22 @@
 
   <hr class="ca-divider">
 
-  <label class="ca-label">Empfänger ({{ resolved_names|length }} Kanal{% if resolved_names|length != 1 %}e{% endif %})</label>
-  {% if resolved_names %}
-  <ul class="ca-channel-list">
-    {% for name in resolved_names %}
-    <li>{{ name }}</li>
+  <label class="ca-label">Empfänger (<span id="recipient-count">{{ channels|length }}</span> Kanal{% if channels|length != 1 %}e{% endif %})</label>
+  {% if channels %}
+  <style>
+    #recipient-list li::before { display: none; }
+    #recipient-list li { cursor: pointer; user-select: none; }
+    #recipient-list li .ca-rm { display:inline-block; width:8px; height:8px; background:var(--ca-teal); border-radius:50%; flex-shrink:0; }
+    #recipient-list li.removed .ca-rm { width:auto; height:auto; background:none; border-radius:0; color:#e00; font-size:1rem; line-height:1; }
+    #recipient-list li.removed .ch-name { text-decoration:line-through; color:#b0b0b0; }
+  </style>
+  <ul class="ca-channel-list" id="recipient-list">
+    {% for id, name in channels %}
+    <li onclick="toggleRemove(this)">
+      <span class="ca-rm"></span>
+      <span class="ch-name">{{ name }}</span>
+      <input type="checkbox" name="send_channels" value="{{ id }}" checked form="confirm-form" style="display:none">
+    </li>
     {% endfor %}
   </ul>
   {% else %}
@@ -40,12 +51,21 @@
 
   <hr class="ca-divider">
 
-  <form method="post">
+  <form method="post" id="confirm-form">
     {% csrf_token %}
     <div class="ca-button-row">
       <button type="submit" name="action" value="send" class="ca-button">Senden</button>
       <button type="submit" name="action" value="back" class="ca-button-outline">← Zurück</button>
     </div>
   </form>
+  <script>
+    function toggleRemove(li) {
+      const removed = li.classList.toggle('removed');
+      li.querySelector('input').disabled = removed;
+      const active = document.querySelectorAll('#recipient-list li:not(.removed)').length;
+      document.getElementById('recipient-count').textContent = active;
+      li.querySelector('.ca-rm').textContent = removed ? '✕' : '';
+    }
+  </script>
 </div>
 {% endblock %}
