@@ -3,6 +3,7 @@ from django.shortcuts import render, redirect
 from django.contrib import messages
 from broadcast.admin_dashboard.services import admin_client
 from broadcast.admin_dashboard.views import require_bot_admin
+from broadcast.services.channel_service import bust_cache
 
 
 def _build_sections(cfg: dict, by_id: dict) -> list:
@@ -75,6 +76,7 @@ def config(request):
             cfg = admin_client.get_config()
             cfg = _handle_post(request, cfg)
             admin_client.put_config(cfg)
+            bust_cache()
             messages.success(request, "Konfiguration gespeichert.")
         except Exception as exc:
             messages.error(request, f"Fehler beim Speichern: {exc}")

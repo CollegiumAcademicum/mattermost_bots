@@ -38,3 +38,8 @@ def get_channels() -> dict:
     except Exception as exc:
         logger.error(f"Failed to fetch channels from postbot API: {exc}")
     return _cache
+
+
+def bust_cache() -> None:
+    global _cache_time
+    _cache_time = 0.0
