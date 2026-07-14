@@ -11,7 +11,6 @@ import requests
 DESCRIPTION = "Verteilt die WG-Aufgaben der nächsten Woche an die WG 3.10"
 
 FILE_URL = "https://cacloud.ca-hd.de/index.php/s/dFaLPwzYFy9BAxF/download"
-# Requires NC_WG_JSON_URL in env — point to a public Nextcloud share download link.
 # JSON shape: {"wg_channel_id": "...", "members": [...], "tasks": [...]}
 
 
