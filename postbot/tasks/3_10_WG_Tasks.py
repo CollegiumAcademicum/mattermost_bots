@@ -73,11 +73,6 @@ async def run(driver, args: str = "") -> None:
         if not member_tasks:
             continue
         member = member_by_id[user_id]
-        #dm_id = driver.channels.create_direct_message_channel([bot_id, user_id])["id"]
-        lines = [f"**Hey {member['name']}, deine WG-Aufgaben für KW {kw}:**"]
-        for t in member_tasks:
-            lines.append(f"- {t['name']} (Schwierigkeit: {t['difficulty']})")
-        #driver.posts.create_post({"channel_id": dm_id, "message": "\n".join(lines)})
 
         overview.append(f"\n**@{member['name']}:**")
         for t in member_tasks:
