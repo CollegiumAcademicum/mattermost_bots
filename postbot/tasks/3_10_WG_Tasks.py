@@ -5,51 +5,21 @@ from __future__ import annotations
 import random
 from datetime import date
 
+import requests
+
+
 DESCRIPTION = "Verteilt die WG-Aufgaben der nächsten Woche an die WG 3.10"
 
+FILE_URL = "https://cacloud.ca-hd.de/index.php/s/dFaLPwzYFy9BAxF/download"
+# Requires NC_WG_JSON_URL in env — point to a public Nextcloud share download link.
+# JSON shape: {"wg_channel_id": "...", "members": [...], "tasks": [...]}
 
-def get_infos()-> tuple[str, list[dict[str, str]], list[dict[str, str|int]]]:
-    wg_channel_id = "upt18p5zg3re8r1nb3duhgzr4e"
 
-    members : list[dict[str, str]] = [
-    {"name": "konstantin_masson ", "user_id": "79ktf4sqsfya8mzb47mrxxkueh"},
-    {"name": "simon_bauer",      "user_id": "x463j3kf9jfnppaynyt5wgaoky"},
-    {"name": "lillyvappen",      "user_id": "mih8mdc3dtrf3jkq5nd8e1iabo"},
-    {"name": "philipp_bartz",    "user_id": "tt63wnfbhjd1dre5r6xmhni93r"},
-    ]
-
-    # interval: every N weeks (1=weekly, 2=biweekly, 4=≈monthly)
-    # offset:   shifts the start week so tasks with the same interval don't all land together
-    #           due when (week - offset) % interval == 0
-    # difficulty: 1 (easy) – 3 (hard), used to balance load across members
-    tasks : list[dict[str, str|int]] = [
-        {"name": "Bad Flächen reinigen", "interval": 2, "offset": 0, "difficulty": 2},
-        {"name": "Bad Klo, Waschbecken, Spiegel, Armaturen, Abfluss reinigen", "interval": 1, "offset": 0,
-         "difficulty": 2},
-        {"name": "Bad Regale putzen", "interval": 2, "offset": 0, "difficulty": 2},
-        {"name": "Badlüfter", "interval": 11, "offset": 0, "difficulty": 1},
-        {
-            "name": "Küche Oberflächen und Herd im Blick behalten und bei Bedarf nachhelfen, Tisch sauber machen und Wachs entfernen, Müll im Blick haben",
-            "interval": 1, "offset": 0, "difficulty": 1},
-        {"name": "Spülmaschienen Maintenance (Filter/Sieb Säubern, Spülmaschienenreiniger und Salz auffüllen)",
-         "interval": 2, "offset": 1, "difficulty": 1},
-        {"name": "Spüle deep clean", "interval": 2, "offset": 1, "difficulty": 1},
-        {"name": "Küche Frontflächen und Griffe wischen (auch Kühlschrank)", "interval": 1, "offset": 0,
-         "difficulty": 1},
-        {"name": "Backofen deep clean", "interval": 8, "offset": 3, "difficulty": 2},
-        {"name": "Kühlschrank putzen", "interval": 7, "offset": 4, "difficulty": 3},
-        {"name": "Küche Schubladen saugen", "interval": 4, "offset": 6, "difficulty": 1},
-        {"name": "Dunstabzugshaube", "interval": 11, "offset": 3, "difficulty": 1},
-        {"name": "Boden Wischen", "interval": 1, "offset": 0, "difficulty": 2},
-        {"name": "Boden Saugen", "interval": 1, "offset": 0, "difficulty": 1},
-        {"name": "Regale abstauben/wischen", "interval": 8, "offset": 0, "difficulty": 2},
-        {"name": "Fenster putzen", "interval": 6, "offset": 2, "difficulty": 3},
-        {"name": "Lichtschalter, Steckdosen, Türklinke putzen", "interval": 4, "offset": 6, "difficulty": 1},
-        {"name": "Sofa saugen", "interval": 3, "offset": 1, "difficulty": 2},
-        {"name": "Teppich ausklopfen", "interval": 8, "offset": 6, "difficulty": 3},
-    ]
-
-    return wg_channel_id, members, tasks
+def get_infos() -> tuple[str, list[dict], list[dict]]:
+    resp = requests.get(FILE_URL, timeout=10)
+    resp.raise_for_status()
+    data = resp.json()
+    return data["wg_channel_id"], data["members"], data["tasks"]
 
 def _due_tasks(week: int, tasks: list[dict[str, str|int]]) -> list[dict]:
     return [t for t in tasks if (week - int(t["offset"])) % int(t["interval"]) == 0]
@@ -123,4 +93,4 @@ async def run(driver, args: str = "") -> None:
 
 
 if __name__ == "__main__":
-    pass
+    print(get_infos())
