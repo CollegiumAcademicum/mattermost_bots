@@ -28,6 +28,7 @@ def _assign(tasks: list[dict], members: list[dict]) -> dict[str, list[dict]]:
     """Greedy bin-packing balanced by difficulty."""
     shuffled = list(tasks)
     random.shuffle(shuffled)
+    random.shuffle(members)
     # stable sort keeps shuffled order for ties → different assignment each week
     shuffled.sort(key=lambda t: -t["difficulty"])
 
