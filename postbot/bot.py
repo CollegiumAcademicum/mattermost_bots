@@ -189,13 +189,13 @@ class PostBot(BaseBot):
     # ── Lifecycle hooks ──────────────────────────────────────────────────────
 
     def _seed_data_files(self) -> None:
-        """Seed missing config files from bundled templates.
+        """Seed config files and sync bundled task scripts into the tasks directory.
 
         Called at the start of :meth:`on_start` before any file is read.
-        For each of ``channels_toml_path`` and ``scheduler_toml_path``: if the
-        configured path does not exist, the corresponding template bundled in
-        the package directory is copied there.  Parent directories are created
-        as needed.  Existing files are never overwritten.
+        Config files (channels.toml, scheduler.toml) are only written if absent.
+        Bundled task scripts (postbot/tasks/*.py) are always copied to
+        ``tasks_dir``, overwriting existing files so the deployed scripts stay
+        in sync with the image.
         """
         templates_dir = Path(__file__).parent
         seeds = [
@@ -212,6 +212,16 @@ class PostBot(BaseBot):
                 target.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copy2(template, target)
                 logger.info(f"Seeded {target} from bundled template {template}.")
+
+        bundled_tasks = templates_dir / "tasks"
+        tasks_dir = self.config.tasks_dir
+        tasks_dir.mkdir(parents=True, exist_ok=True)
+        for src in bundled_tasks.glob("*.py"):
+            if src.name.startswith("_"):
+                continue
+            dst = tasks_dir / src.name
+            shutil.copy2(src, dst)
+            logger.info(f"Synced bundled task {src.name!r} → {dst}.")
 
     async def on_start(self) -> None:
         """Run setup tasks after driver login, before the WebSocket opens.
