@@ -287,9 +287,9 @@ class PostBot(BaseBot):
         if self.config.log_file:
             file_handler = logging.handlers.RotatingFileHandler(
                 self.config.log_file,
-                maxBytes=100 * 1024 * 1024,  # 100 MB, matching original postbot
-                backupCount=5,
-                mode="a+",
+                maxBytes=10 * 1024 * 1024,
+                backupCount=3,
+                mode="a",
             )
             file_handler.setLevel(file_level)
             handlers.append(file_handler)

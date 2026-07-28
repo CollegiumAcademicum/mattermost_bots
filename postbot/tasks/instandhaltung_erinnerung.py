@@ -5,9 +5,6 @@ from __future__ import annotations
 import io
 import logging
 
-import openpyxl
-import requests
-
 logger = logging.getLogger(__name__)
 
 DESCRIPTION = "Erinnerung an Instandhaltungsaufgaben in alle Cluster-Kanäle"
@@ -21,11 +18,13 @@ MESSAGE = "Denkt bitte daran, eure Instandhaltungsaufgabe diesen Monat zu erledi
 
 
 def _channel_ids(content: bytes) -> list[str]:
+    import openpyxl
     ws = openpyxl.load_workbook(io.BytesIO(content)).active
     return [row[1] for row in ws.iter_rows(min_row=4, values_only=True) if row[1]]
 
 
 async def run(driver, args: str = "") -> None:
+    import requests
     seen: set[str] = set()
     for url in _FILE_URLS:
         try:

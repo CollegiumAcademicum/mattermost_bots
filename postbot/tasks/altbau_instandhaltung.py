@@ -10,9 +10,6 @@ from pathlib import Path
 
 import logging
 
-import openpyxl
-import requests
-
 logger = logging.getLogger(__name__)
 
 DESCRIPTION = "Der Instandhaltungsverteiler für den Altbau"
@@ -26,6 +23,7 @@ def _abs_month(d: date) -> int:
 
 
 def _parse_excel(content: bytes) -> list[dict]:
+    import openpyxl
     ws = openpyxl.load_workbook(io.BytesIO(content)).active
     return [
         {
@@ -41,6 +39,7 @@ def _parse_excel(content: bytes) -> list[dict]:
 
 
 def _to_pdf(docx_url: str, tmpdir: str) -> Path:
+    import requests
     resp = requests.get(docx_url, timeout=30)
     resp.raise_for_status()
     docx = Path(tmpdir) / "Aufgabenkarte.docx"
@@ -54,6 +53,7 @@ def _to_pdf(docx_url: str, tmpdir: str) -> Path:
 
 
 async def run(driver, args: str = "") -> None:
+    import requests
     resp = requests.get(FILE_URL, timeout=10)
     resp.raise_for_status()
 
