@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import io
 import logging
 
 logger = logging.getLogger(__name__)
@@ -17,20 +16,15 @@ _FILE_URLS = [
 MESSAGE = "Denkt bitte daran, eure Instandhaltungsaufgabe diesen Monat zu erledigen!"
 
 
-def _channel_ids(content: bytes) -> list[str]:
-    import openpyxl
-    ws = openpyxl.load_workbook(io.BytesIO(content)).active
-    return [row[1] for row in ws.iter_rows(min_row=4, values_only=True) if row[1]]
-
-
 async def run(driver, args: str = "") -> None:
     import requests
+    from _instandhaltung_lib import channel_ids_from_excel
     seen: set[str] = set()
     for url in _FILE_URLS:
         try:
             resp = requests.get(url, timeout=10)
             resp.raise_for_status()
-            channel_ids = _channel_ids(resp.content)
+            channel_ids = channel_ids_from_excel(resp.content)
         except Exception as exc:
             logger.error("Failed to load Excel from %s: %s", url, exc)
             continue

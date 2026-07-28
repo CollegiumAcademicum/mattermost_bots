@@ -217,7 +217,7 @@ class PostBot(BaseBot):
         tasks_dir = self.config.tasks_dir
         tasks_dir.mkdir(parents=True, exist_ok=True)
         for src in bundled_tasks.glob("*.py"):
-            if src.name.startswith("_"):
+            if src.name.startswith("__"):
                 continue
             dst = tasks_dir / src.name
             shutil.copy2(src, dst)

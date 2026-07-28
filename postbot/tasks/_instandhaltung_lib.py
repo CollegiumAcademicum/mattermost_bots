@@ -1,0 +1,101 @@
+"""Shared helpers for Instandhaltung task scripts."""
+
+from __future__ import annotations
+
+import io
+import logging
+import subprocess
+import tempfile
+from datetime import date
+from pathlib import Path
+
+logger = logging.getLogger(__name__)
+
+_EPOCH = date(2023, 2, 17)
+_MONTHS = (
+    "Januar", "Februar", "März", "April", "Mai", "Juni",
+    "Juli", "August", "September", "Oktober", "November", "Dezember",
+)
+
+
+def _abs_month(d: date) -> int:
+    return (d.year - _EPOCH.year) * 12 + (d.month - _EPOCH.month)
+
+
+def parse_excel(content: bytes) -> list[dict]:
+    import openpyxl
+    ws = openpyxl.load_workbook(io.BytesIO(content)).active
+    return [
+        {
+            "wg_name": row[0],
+            "channel_id": row[1],
+            "heading": row[2],
+            "description": row[3],
+            "docx_url": str(row[4]).rstrip("/") + "/download",
+        }
+        for row in ws.iter_rows(min_row=4, values_only=True)
+        if row[1]
+    ]
+
+
+def channel_ids_from_excel(content: bytes) -> list[str]:
+    import openpyxl
+    ws = openpyxl.load_workbook(io.BytesIO(content)).active
+    return [row[1] for row in ws.iter_rows(min_row=4, values_only=True) if row[1]]
+
+
+def to_pdf(docx_url: str, tmpdir: str) -> Path:
+    import requests
+    resp = requests.get(docx_url, timeout=30)
+    resp.raise_for_status()
+    docx = Path(tmpdir) / "Aufgabenkarte.docx"
+    docx.write_bytes(resp.content)
+    subprocess.run(
+        ["libreoffice", "--headless", "--convert-to", "pdf", "--outdir", tmpdir, str(docx)],
+        check=True,
+        capture_output=True,
+    )
+    return Path(tmpdir) / "Aufgabenkarte.pdf"
+
+
+async def run_instandhaltung(driver, file_url: str, overview_channel_id: str) -> None:
+    import requests
+    resp = requests.get(file_url, timeout=10)
+    resp.raise_for_status()
+
+    today = date.today()
+    this_month = _MONTHS[today.month - 1]
+
+    tasks = parse_excel(resp.content)
+    n = len(tasks)
+    offset = _abs_month(today) % n
+    channel_ids = [t["channel_id"] for t in tasks]
+    channel_ids = channel_ids[offset:] + channel_ids[:offset]
+
+    rows = "\n".join(
+        f"| {tasks[(i + offset) % n]['wg_name']} | {task['heading']} | {task['description']} |"
+        for i, task in enumerate(tasks)
+    )
+    table = "| WG | Aufgabe | Beschreibung |\n|---|---|---|\n" + rows
+    driver.posts.create_post({"channel_id": overview_channel_id, "message": table})
+
+    for task, channel_id in zip(tasks, channel_ids):
+        try:
+            with tempfile.TemporaryDirectory() as tmpdir:
+                pdf = to_pdf(task["docx_url"], tmpdir)
+                with open(pdf, "rb") as f:
+                    upload = driver.files.upload_file(
+                        channel_id=channel_id,
+                        files={"files": (pdf.name, f, "application/pdf")},
+                    )
+                file_id = upload["file_infos"][0]["id"]
+                driver.posts.create_post({
+                    "channel_id": channel_id,
+                    "message": (
+                        f"##### Eure Instandhaltungsaufgabe im {this_month}:\n"
+                        f"### {task['heading']}\n{task['description']}"
+                    ),
+                    "file_ids": [file_id],
+                })
+        except Exception as exc:
+            logger.error("Failed to post task %r to channel %s: %s", task["heading"], channel_id, exc)

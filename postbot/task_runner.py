@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import importlib.util
 import logging
+import sys
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -70,6 +71,10 @@ def load_tasks(tasks_dir: Path) -> dict[str, TaskEntry]:
     logger.debug(
         f"Tasks directory {str(tasks_dir)!r} exists. Proceeding to load tasks."
     )
+
+    tasks_dir_str = str(tasks_dir.resolve())
+    if tasks_dir_str not in sys.path:
+        sys.path.insert(0, tasks_dir_str)
 
     tasks: dict[str, TaskEntry] = {}
     for path in sorted(tasks_dir.glob("*.py")):
