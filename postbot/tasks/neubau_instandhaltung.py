@@ -8,9 +8,12 @@ import tempfile
 from datetime import date
 from pathlib import Path
 
+import logging
+
 import openpyxl
 import requests
 
+logger = logging.getLogger(__name__)
 
 DESCRIPTION = "Der Instandhaltungsverteiler für den Neubau"
 FILE_URL = "https://cacloud.ca-hd.de/index.php/s/pYwBSHgcMDTPqbW/download"
@@ -72,16 +75,19 @@ async def run(driver, args: str = "") -> None:
     driver.posts.create_post({"channel_id": OVERVIEW_CHANNEL_ID, "message": table})
 
     for task, channel_id in zip(tasks, channel_ids):
-        with tempfile.TemporaryDirectory() as tmpdir:
-            pdf = _to_pdf(task["docx_url"], tmpdir)
-            with open(pdf, "rb") as f:
-                upload = driver.files.upload_file(
-                    channel_id=channel_id,
-                    files={"files": (pdf.name, f, "application/pdf")},
-                )
-            file_id = upload["file_infos"][0]["id"]
-            driver.posts.create_post({
-                "channel_id": channel_id,
-                "message": f"##### Eure Instandhaltungsaufgabe im {this_month}:\n### {task['heading']}\n{task['description']}",
-                "file_ids": [file_id],
-            })
+        try:
+            with tempfile.TemporaryDirectory() as tmpdir:
+                pdf = _to_pdf(task["docx_url"], tmpdir)
+                with open(pdf, "rb") as f:
+                    upload = driver.files.upload_file(
+                        channel_id=channel_id,
+                        files={"files": (pdf.name, f, "application/pdf")},
+                    )
+                file_id = upload["file_infos"][0]["id"]
+                driver.posts.create_post({
+                    "channel_id": channel_id,
+                    "message": f"##### Eure Instandhaltungsaufgabe im {this_month}:\n### {task['heading']}\n{task['description']}",
+                    "file_ids": [file_id],
+                })
+        except Exception as exc:
+            logger.error("Failed to post task %r to channel %s: %s", task["heading"], channel_id, exc)

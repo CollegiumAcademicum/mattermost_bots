@@ -3,9 +3,12 @@
 from __future__ import annotations
 
 import io
+import logging
 
 import openpyxl
 import requests
+
+logger = logging.getLogger(__name__)
 
 DESCRIPTION = "Erinnerung an Instandhaltungsaufgaben in alle Cluster-Kanäle"
 
@@ -25,9 +28,18 @@ def _channel_ids(content: bytes) -> list[str]:
 async def run(driver, args: str = "") -> None:
     seen: set[str] = set()
     for url in _FILE_URLS:
-        resp = requests.get(url, timeout=10)
-        resp.raise_for_status()
-        for channel_id in _channel_ids(resp.content):
-            if channel_id not in seen:
-                seen.add(channel_id)
+        try:
+            resp = requests.get(url, timeout=10)
+            resp.raise_for_status()
+            channel_ids = _channel_ids(resp.content)
+        except Exception as exc:
+            logger.error("Failed to load Excel from %s: %s", url, exc)
+            continue
+        for channel_id in channel_ids:
+            if channel_id in seen:
+                continue
+            seen.add(channel_id)
+            try:
                 driver.posts.create_post({"channel_id": channel_id, "message": MESSAGE})
+            except Exception as exc:
+                logger.error("Failed to post reminder to channel %s: %s", channel_id, exc)
