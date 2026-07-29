@@ -4,7 +4,7 @@ DESCRIPTION = "vierteljährliche Erinnerung zur Kündigungsfrist"
 
 # (move_out, deadline) per quarter — last day of quarter, 5th of month before
 _QUARTERS = {
-    1: ("31.03", "05.02"),
+    1: ("31.03", "03.02"),
     2: ("30.06", "05.05"),
     3: ("30.09", "05.08"),
     4: ("31.12", "05.11"),
