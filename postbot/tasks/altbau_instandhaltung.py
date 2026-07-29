@@ -4,7 +4,7 @@ from __future__ import annotations
 
 DESCRIPTION = "Der Instandhaltungsverteiler für den Altbau"
 FILE_URL = "https://cacloud.ca-hd.de/index.php/s/mb3rsJLTRnoPDJD/download"
-OVERVIEW_CHANNEL_ID = "ALTBAU_OVERVIEW_DUMMY"
+OVERVIEW_CHANNEL_ID = "was8uq7qbbb65c4hprysm7m1be"
 
 
 async def run(driver, args: str = "") -> None:

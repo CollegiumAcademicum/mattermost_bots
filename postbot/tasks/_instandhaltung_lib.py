@@ -76,7 +76,7 @@ async def run_instandhaltung(driver, file_url: str, overview_channel_id: str) ->
         f"| {tasks[(i + offset) % n]['wg_name']} | {task['heading']} | {task['description']} |"
         for i, task in enumerate(tasks)
     )
-    table = "| WG | Aufgabe | Beschreibung |\n|---|---|---|\n" + rows
+    table = f"Instandhaltungsaufgaben im {this_month}\n| WG | Aufgabe | Beschreibung |\n|---|---|---|\n" + rows
     driver.posts.create_post({"channel_id": overview_channel_id, "message": table})
 
     for task, channel_id in zip(tasks, channel_ids):
@@ -93,9 +93,9 @@ async def run_instandhaltung(driver, file_url: str, overview_channel_id: str) ->
                     "channel_id": channel_id,
                     "message": (
                         f"##### Eure Instandhaltungsaufgabe im {this_month}:\n"
-                        f"### {task['heading']}\n{task['description']}"
+                        f"### {task['heading']}\n{task['description']}\nBitte schaut in die Aufgabenkarte, da diese regelmäßig ergänzt und geändert werden."
                     ),
                     "file_ids": [file_id],
                 })
         except Exception as exc:
-            logger.error("Failed to post task %r to channel %s: %s", task["heading"], channel_id, exc)
+            logger.error(f"Failed to post task {task['heading']!r} to channel {channel_id!r}: {exc}")
