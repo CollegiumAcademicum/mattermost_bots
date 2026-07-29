@@ -44,6 +44,7 @@ async def run(driver, args: str = "") -> None:
         f"Liebe Mitbewohnis,\n"
         f"kurze Erinnerung, dass – falls ihr zum **{move_out}.{year}** ausziehen wollt – die Kündigungsfrist am **{deadline}.{year}** ist. "
         f"Gebt uns einfach durch eine kurze formlose Kündigung an [mietverwaltung@collegiumacademicum.de](mailto:mietverwaltung@collegiumacademicum.de) Bescheid :)\n\n"
+        f"------"
         f"Dear flatmates,\n"
         f"A quick reminder that if you want to move out by the **{move_out}.{year}**, the deadline to send in your notice of termination is **{deadline}.{year}**. "
         f"So if this applies to you, please let us know by then via [mietverwaltung@collegiumacademicum.de](mailto:mietverwaltung@collegiumacademicum.de) :)"
