@@ -6,6 +6,7 @@ import asyncio
 import importlib.util
 import logging
 import sys
+
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -72,9 +73,19 @@ def load_tasks(tasks_dir: Path) -> dict[str, TaskEntry]:
         f"Tasks directory {str(tasks_dir)!r} exists. Proceeding to load tasks."
     )
 
-    tasks_dir_str = str(tasks_dir.resolve())
-    if tasks_dir_str not in sys.path:
-        sys.path.insert(0, tasks_dir_str)
+    # Pre-load _*.py library files into sys.modules so task files can import
+    # them by name without putting tasks_dir on sys.path (which would allow
+    # shadowing stdlib modules).
+    for lib_path in sorted(tasks_dir.glob("_*.py")):
+        if lib_path.name.startswith("__"):
+            continue
+        lib_name = lib_path.stem
+        if lib_name not in sys.modules:
+            lib_spec = importlib.util.spec_from_file_location(lib_name, lib_path)
+            lib_mod = importlib.util.module_from_spec(lib_spec)
+            sys.modules[lib_name] = lib_mod
+            lib_spec.loader.exec_module(lib_mod)
+            logger.debug(f"Pre-loaded task library {lib_name!r}.")
 
     tasks: dict[str, TaskEntry] = {}
     for path in sorted(tasks_dir.glob("*.py")):
