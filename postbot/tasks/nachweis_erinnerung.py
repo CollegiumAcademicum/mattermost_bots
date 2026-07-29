@@ -36,7 +36,7 @@ async def run(driver, args: str = "") -> None:
     message = (
         f"### Nachweise/ Proof of Education :incoming_envelope:\n\n"
         f"*English version below*\n\n"
-        f"Hey liebe Neubau-Menschen,\n\n"
+        f"Hey liebe Menschen,\n\n"
         f"Es ist mal wieder soweit, wir brauchen die **Nachweise für das nächste halbe Jahr**. "
         f"Bitte ladet den Nachweis bis zum **{deadline}.** auf https://nachweis.collegiumacademicum.de hoch.  \n"
         f"@Studierende: Nachweis = aktuelle Immatrikulationsbescheinigung ({period})\n"
@@ -45,7 +45,7 @@ async def run(driver, args: str = "") -> None:
         f"**Außerdem wichtig:** Euer Ausbildungsvertrag reicht leider als Nachweis nicht aus!\n\n"
         f"Falls ihr Fragen dazu oder irgendwelche Probleme habt, kommt gerne auf uns (Mietverwaltung) zu. Danke euch \\(:\n\n"
         f"---\n\n"
-        f"Hey, dear flatmates of the Neubau,\n\n"
+        f"Hey, dear flatmates,\n\n"
         f"It's that time again, we need the **proof of education for the next six months**. "
         f"Please upload the proof of education to https://nachweis.collegiumacademicum.de until the **{deadline}**.\n"
         f"@students: proof of education = current certificate of enrollment ({period})\n"
