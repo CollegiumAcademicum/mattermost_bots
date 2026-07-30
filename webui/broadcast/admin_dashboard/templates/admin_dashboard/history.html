@@ -36,9 +36,18 @@
           <td style="white-space:nowrap;">{{ r.timestamp|slice:":16"|cut:"T" }}</td>
           <td>{{ r.sender_name }}</td>
           <td>
+            {% if r.target_channels|length > 3 %}
+            <details>
+              <summary style="cursor:pointer;color:var(--ca-teal,#35ADA4);font-size:0.85rem;">{{ r.target_channels|length }} Kanäle</summary>
+              <div style="margin-top:0.25rem;">
+            {% endif %}
             {% for ch in r.target_channels %}
               <span style="display:inline-block;background:#e8f7f6;color:#2f9991;border-radius:3px;padding:1px 6px;font-size:0.8rem;margin:1px;">{{ ch }}</span>
             {% endfor %}
+            {% if r.target_channels|length > 3 %}
+              </div>
+            </details>
+            {% endif %}
           </td>
           <td>
             <details>
