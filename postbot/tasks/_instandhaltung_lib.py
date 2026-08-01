@@ -76,7 +76,7 @@ async def run_instandhaltung(driver, file_url: str, overview_channel_id: str) ->
         f"| {tasks[(i + offset) % n]['wg_name']} | {task['heading']} | {task['description']} |"
         for i, task in enumerate(tasks)
     )
-    table = f"Instandhaltungsaufgaben im {this_month}\n| WG | Aufgabe | Beschreibung |\n|---|---|---|\n" + rows
+    table = f"Instandhaltungsaufgaben im {this_month}\n\n| WG | Aufgabe | Beschreibung |\n|---|---|---|\n" + rows
     driver.posts.create_post({"channel_id": overview_channel_id, "message": table})
 
     for task, channel_id in zip(tasks, channel_ids):
