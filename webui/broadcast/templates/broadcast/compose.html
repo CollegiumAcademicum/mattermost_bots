@@ -22,12 +22,24 @@
 
 {% block content %}
 <div class="ca-card">
-  <form method="post" id="compose-form">
+  <form method="post" id="compose-form" enctype="multipart/form-data">
     {% csrf_token %}
 
     <label class="ca-label" for="id_message">Nachricht</label>
-    <textarea class="ca-textarea" name="message" id="id_message" rows="6"
-      placeholder="Nachricht hier eingeben …" required>{{ request.session.broadcast_message|default:'' }}</textarea>
+    <div id="message-dropzone">
+      <textarea class="ca-textarea" name="message" id="id_message" rows="6"
+        placeholder="Nachricht hier eingeben …" required>{{ request.session.broadcast_message|default:'' }}</textarea>
+    </div>
+    <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap;margin-top:0.75rem;">
+      <input type="file" id="id_attachments" name="attachments" multiple style="display:none;">
+      <button type="button" class="ca-button-outline" id="attachment-button">Dateien anhängen</button>
+      <span id="attachment-count" style="font-size:0.9rem;color:#555;">{{ attachments|length }} Datei{% if attachments|length != 1 %}en{% endif %} ausgewählt</span>
+    </div>
+    <div id="attachment-list" style="margin-top:0.5rem;font-size:0.9rem;color:#555;">
+      {% for attachment in attachments %}
+      <div>{{ attachment.name }}</div>
+      {% endfor %}
+    </div>
 
     <hr class="ca-divider">
 
@@ -163,6 +175,42 @@ document.getElementById('compose-form').addEventListener('submit', function() {
     h.type = 'hidden'; h.name = 'excluded_channels'; h.value = cb.value;
     this.appendChild(h);
   });
+});
+
+const fileInput = document.getElementById('id_attachments');
+const attachmentCount = document.getElementById('attachment-count');
+const attachmentList = document.getElementById('attachment-list');
+const attachmentButton = document.getElementById('attachment-button');
+const dropzone = document.getElementById('message-dropzone');
+
+function renderAttachmentSummary() {
+  const files = Array.from(fileInput.files);
+  attachmentCount.textContent = `${files.length} Datei${files.length === 1 ? '' : 'en'} ausgewählt`;
+  attachmentList.innerHTML = files.map(file => `<div>${file.name}</div>`).join('');
+}
+
+function mergeFiles(newFiles) {
+  const transfer = new DataTransfer();
+  Array.from(fileInput.files).forEach(file => transfer.items.add(file));
+  Array.from(newFiles).forEach(file => transfer.items.add(file));
+  fileInput.files = transfer.files;
+  renderAttachmentSummary();
+}
+
+attachmentButton.addEventListener('click', () => fileInput.click());
+fileInput.addEventListener('change', renderAttachmentSummary);
+
+dropzone.addEventListener('dragover', event => {
+  event.preventDefault();
+  dropzone.classList.add('ca-drop-active');
+});
+dropzone.addEventListener('dragleave', () => dropzone.classList.remove('ca-drop-active'));
+dropzone.addEventListener('drop', event => {
+  event.preventDefault();
+  dropzone.classList.remove('ca-drop-active');
+  if (event.dataTransfer.files.length > 0) {
+    mergeFiles(event.dataTransfer.files);
+  }
 });
 </script>
 {% endblock %}

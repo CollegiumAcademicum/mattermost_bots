@@ -27,6 +27,16 @@
 
   <hr class="ca-divider">
 
+  {% if attachments %}
+  <label class="ca-label">Anhänge ({{ attachments|length }})</label>
+  <ul class="ca-channel-list">
+    {% for attachment in attachments %}
+    <li>{{ attachment.name }}</li>
+    {% endfor %}
+  </ul>
+  <hr class="ca-divider">
+  {% endif %}
+
   <label class="ca-label">Empfänger (<span id="recipient-count">{{ channels|length }}</span> Kanal{% if channels|length != 1 %}e{% endif %})</label>
   {% if channels %}
   <style>

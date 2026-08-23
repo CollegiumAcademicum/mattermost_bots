@@ -115,6 +115,10 @@ body {
   border-color: var(--ca-teal); outline: none;
   box-shadow: 0 0 0 2px rgba(53,173,164,0.15);
 }
+#message-dropzone.ca-drop-active .ca-textarea {
+  border-color: var(--ca-teal);
+  background: #f0faf9;
+}
 
 /* ── Buttons ── */
 .ca-button {

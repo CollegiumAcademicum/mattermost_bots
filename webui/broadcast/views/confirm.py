@@ -6,6 +6,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect, render
 
+from broadcast.views.compose import _ATTACHMENTS_SESSION_KEY, _clear_saved_attachments
 from broadcast.services.channel_service import get_channels
 from broadcast.services.postbot_client import send_broadcast
 
@@ -51,6 +52,7 @@ def confirm(request):
     selected_groups = request.session.get("broadcast_groups", [])
     selected_individual = request.session.get("broadcast_individual", [])
     excluded_ids = set(request.session.get("broadcast_excluded", []))
+    attachments = request.session.get(_ATTACHMENTS_SESSION_KEY, [])
     try:
         channels_data = get_channels()
     except (http_requests.ConnectionError, http_requests.Timeout):
@@ -72,9 +74,10 @@ def confirm(request):
             send_ids = request.POST.getlist("send_channels") if "send_channels" in request.POST else channel_ids
             try:
                 result = send_broadcast(
-                    message, send_ids, sender=request.user.username
+                    message, send_ids, sender=request.user.username, attachments=attachments
                 )
-                for key in ("broadcast_message", "broadcast_groups", "broadcast_individual", "broadcast_excluded"):
+                _clear_saved_attachments(attachments)
+                for key in ("broadcast_message", "broadcast_groups", "broadcast_individual", "broadcast_excluded", _ATTACHMENTS_SESSION_KEY):
                     request.session.pop(key, None)
                 request.session["broadcast_result"] = result
                 return redirect("broadcast:result")
@@ -88,5 +91,9 @@ def confirm(request):
     return render(
         request,
         "broadcast/confirm.html",
-        {"message": message, "channels": list(zip(channel_ids, resolved_names))},
+        {
+            "message": message,
+            "channels": list(zip(channel_ids, resolved_names)),
+            "attachments": attachments,
+        },
     )

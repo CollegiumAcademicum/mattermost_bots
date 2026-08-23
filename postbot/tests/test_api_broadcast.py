@@ -1,4 +1,5 @@
 """Tests for POST /api/broadcast."""
+import base64
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -88,6 +89,33 @@ def test_broadcast_all_failed():
     data = resp.json()
     assert data["sent"] == 0
     assert data["failed"] == 1
+
+
+def test_broadcast_with_attachments_uploads_and_posts_file_ids():
+    bot = _make_bot()
+    bot.driver.files.upload_file.return_value = {"file_infos": [{"id": "uploaded-id"}]}
+    set_bot(bot)
+    client = TestClient(app)
+    resp = client.post(
+        "/api/broadcast",
+        json={
+            "message": "Hello",
+            "channel_ids": ["id1"],
+            "attachments": [{
+                "filename": "doc.txt",
+                "content_type": "text/plain",
+                "content_base64": base64.b64encode(b"payload").decode("utf-8"),
+            }],
+        },
+        headers={"Authorization": "Bearer " + bot.config.webui_api_secret},
+    )
+    assert resp.status_code == 200
+    bot.driver.files.upload_file.assert_called_once_with(
+        channel_id="id1",
+        files={"files": ("doc.txt", b"payload", "text/plain")},
+    )
+    posted = bot.driver.posts.create_post.call_args[0][0]
+    assert posted["file_ids"] == ["uploaded-id"]
 
 
 def test_broadcast_requires_auth():
