@@ -1,4 +1,6 @@
 """Tests for postbot_client and channel_service."""
+import tempfile
+from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -43,6 +45,25 @@ class PostbotClientTest(TestCase):
 
         with self.assertRaises(requests.HTTPError):
             send_broadcast("Hello", ["id1"])
+
+    @patch("broadcast.admin_dashboard.services.admin_client._call")
+    def test_send_broadcast_includes_attachments(self, mock_call):
+        mock_call.return_value = {"sent": 1, "failed": 0, "errors": []}
+        from broadcast.services.postbot_client import send_broadcast
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            file_path = Path(tmpdir) / "note.txt"
+            file_path.write_text("hello")
+            send_broadcast(
+                "Hello world",
+                ["id1"],
+                attachments=[{"name": "note.txt", "path": str(file_path), "content_type": "text/plain"}],
+            )
+
+        sent_json = mock_call.call_args.kwargs["json"]
+        assert sent_json["attachments"][0]["filename"] == "note.txt"
+        assert sent_json["attachments"][0]["content_type"] == "text/plain"
+        assert sent_json["attachments"][0]["content_base64"] == "aGVsbG8="
 
 
 @override_settings(

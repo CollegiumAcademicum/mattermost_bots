@@ -3,6 +3,7 @@ from unittest.mock import patch
 
 import pytest
 from django.contrib.auth.models import User
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import Client, TestCase
 from django.urls import reverse
 
@@ -37,7 +38,7 @@ class ComposeViewTest(TestCase):
             reverse("broadcast:compose"),
             {"message": "Hello world", "groups": ["Group A"]},
         )
-        self.assertRedirects(resp, reverse("broadcast:confirm"))
+        self.assertRedirects(resp, reverse("broadcast:confirm"), fetch_redirect_response=False)
 
     @patch("broadcast.views.compose.get_channels", return_value=MOCK_CHANNELS)
     def test_post_stores_selections_in_session(self, _):
@@ -48,6 +49,17 @@ class ComposeViewTest(TestCase):
         session = self.client.session
         self.assertEqual(session["broadcast_message"], "Hello")
         self.assertEqual(session["broadcast_groups"], ["Group A"])
+
+    @patch("broadcast.views.compose.get_channels", return_value=MOCK_CHANNELS)
+    def test_post_stores_uploaded_attachments_in_session(self, _):
+        upload = SimpleUploadedFile("test.txt", b"hello", content_type="text/plain")
+        self.client.post(
+            reverse("broadcast:compose"),
+            {"message": "Hello", "groups": ["Group A"], "attachments": [upload]},
+        )
+        attachments = self.client.session["broadcast_attachments"]
+        self.assertEqual(len(attachments), 1)
+        self.assertEqual(attachments[0]["name"], "test.txt")
 
     @patch("broadcast.views.compose.get_channels", return_value=MOCK_CHANNELS)
     def test_post_empty_message_shows_error(self, _):
@@ -98,7 +110,25 @@ class ConfirmViewTest(TestCase):
     def test_post_send_calls_postbot_and_redirects(self, mock_send, _):
         resp = self.client.post(reverse("broadcast:confirm"), {"action": "send"})
         self.assertRedirects(resp, reverse("broadcast:result"))
-        mock_send.assert_called_once_with("Hello world", ["id1"], sender="testuser")
+        mock_send.assert_called_once_with("Hello world", ["id1"], sender="testuser", attachments=[])
+
+    @patch("broadcast.views.confirm.get_channels", return_value=MOCK_CHANNELS)
+    @patch(
+        "broadcast.views.confirm.send_broadcast",
+        return_value={"sent": 1, "failed": 0, "errors": []},
+    )
+    def test_post_send_includes_attachments(self, mock_send, _):
+        session = self.client.session
+        session["broadcast_attachments"] = [{"name": "a.txt", "path": "/tmp/a.txt", "content_type": "text/plain"}]
+        session.save()
+        resp = self.client.post(reverse("broadcast:confirm"), {"action": "send"})
+        self.assertRedirects(resp, reverse("broadcast:result"))
+        mock_send.assert_called_once_with(
+            "Hello world",
+            ["id1"],
+            sender="testuser",
+            attachments=[{"name": "a.txt", "path": "/tmp/a.txt", "content_type": "text/plain"}],
+        )
 
     @patch("broadcast.views.confirm.get_channels", return_value=MOCK_CHANNELS)
     def test_post_back_redirects_to_compose(self, _):
