@@ -13,7 +13,7 @@ _FILE_URLS = [
     "https://cacloud.ca-hd.de/index.php/s/pYwBSHgcMDTPqbW/download",  # Neubau
 ]
 
-MESSAGE = "Denkt bitte daran, eure Instandhaltungsaufgabe diesen Monat zu erledigen!"
+MESSAGE = "Denkt bitte daran, eure Instandhaltungsaufgabe zu machen und es an @ag_was zurückzumelden."
 
 
 async def run(driver, args: str = "") -> None:
