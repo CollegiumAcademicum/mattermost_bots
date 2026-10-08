@@ -6,6 +6,11 @@ DESCRIPTION = "Erinnerung an das nächste AG-IT-Treffen"
 
 async def run(driver, args: str = "") -> None:
 
+    """Execute only every two weeks"""
+    weeknumber = datetime.date.isocalendar()[1]
+    if weeknumber % 2 == 1:
+        return
+
     tomorrow = datetime.date.today() + datetime.timedelta(days=1)
 
     driver.posts.create_post({
