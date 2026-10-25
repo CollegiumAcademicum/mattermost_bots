@@ -15,7 +15,7 @@ async def run(driver, args: str = "") -> None:
 
     driver.posts.create_post({
         "channel_id": "ftx1e8fazjn68bqbt1zdq71aeh",
-        "message": f"Das nächste AG-IT Treffen ist morgen, den {tomorrow.day}.{tomorrow.month}., um 19:30 Uhr :tada: Bitte reagiert, ob ihr kommt.",
+        "message": f"Das nächste AG-IT Treffen ist morgen, den {tomorrow.day}.{tomorrow.month}., um 21:00 Uhr :tada: Bitte reagiert, ob ihr kommt.",
     })
 
     pass
