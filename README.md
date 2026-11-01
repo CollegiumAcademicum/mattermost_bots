@@ -45,9 +45,9 @@ Full documentation: [postbot/README.md](postbot/README.md)
 A Django web application that lets authorized users trigger broadcasts through a
 browser instead of via direct message to the bot.
 
-- LDAP authentication (falls back to local Django accounts when `python-ldap` is
-  unavailable)
-- Members of a configurable LDAP group are granted the `BotAdmin` permission
+- Keycloak (OIDC) login; local Django accounts remain available through `/admin/`
+- Members of a configurable group are granted the `BotAdmin` permission, re-checked
+  every 15 minutes
 - Three-step broadcast flow: compose → confirm → result
 - Communicates with postbot over an internal network using a shared API secret
 - Served by Gunicorn on port 8080
@@ -60,7 +60,7 @@ browser instead of via direct message to the bot.
 
 - Docker, or Podman with podman-compose
 - A running Mattermost instance with a bot account and its access token
-- An LDAP server (optional; local Django accounts work without it)
+- A Keycloak client for the web UI (see [Keycloak setup](#keycloak-setup))
 
 ### 1. Create a `.env` file
 
@@ -100,7 +100,7 @@ Run the one-time setup before the first start:
 # Apply migrations
 docker compose run --rm webui uv run python manage.py migrate
 
-# Create a local superuser (skip if using LDAP exclusively)
+# Create a local superuser (emergency access through /admin/)
 docker compose run --rm webui uv run python manage.py createsuperuser
 ```
 
@@ -120,10 +120,25 @@ This starts two containers on an internal bridge network:
 The webui reaches postbot at `http://postbot:8000` (internal DNS). Only the
 webui port is exposed to the host.
 
-### 5. Grant broadcast permission to LDAP users
+### Keycloak setup
 
-LDAP members of `LDAP_ADMIN_GROUP_DN` are automatically given the `BotAdmin`
-group permission on login.
+In the `collegium` realm, create an OpenID Connect client `postbot`:
+
+1. Client authentication **on**, Standard flow only.
+2. Valid redirect URIs `https://<webui-host>/oidc/callback/`, Valid post logout
+   redirect URIs `https://<webui-host>/logged-out/`, Web origins `https://<webui-host>`.
+3. **Credentials** tab: copy the secret into `OIDC_RP_CLIENT_SECRET`.
+4. **Client scopes → postbot-dedicated → Add mapper → By configuration → Group Membership**:
+   Token Claim Name `groups`, Full group path off, Add to userinfo on.
+
+Every user who can log in to this client can send broadcasts. To restrict that, require
+a role with a Keycloak authentication flow on the client.
+
+### 5. Grant broadcast permission to users
+
+Members of `LDAP_ADMIN_GROUP_DN` are automatically given the `BotAdmin`
+group permission on login. The group is matched by its `cn` against the Keycloak
+`groups` claim.
 
 To grant an existing local Django user access:
 
@@ -227,9 +242,9 @@ uv run postbot/main.py
 cd webui && DJANGO_SETTINGS_MODULE=webui.settings DEBUG=true uv run python manage.py runserver 8080
 ```
 
-Open http://localhost:8080/login/ and log in with the superuser you created.
+Open http://localhost:8080/admin/login/ and log in with the superuser you created, then go to http://localhost:8080/broadcast/.
 
-`DEBUG=true` is passed explicitly (not in `.env`) so production deployments cannot accidentally enable debug mode. No LDAP server is required — login falls through to Django's local `ModelBackend` automatically.
+`DEBUG=true` is passed explicitly (not in `.env`) so production deployments cannot accidentally enable debug mode. No Keycloak is required for this: `/admin/` uses Django's local `ModelBackend`.
 
 ---
 
@@ -262,8 +277,7 @@ Open http://localhost:8080/login/ and log in with the superuser you created.
 | `DEBUG` | no | `false` | Enable Django debug mode |
 | `POSTBOT_API_URL` | no | `http://localhost:8000` | postbot base URL |
 | `POSTBOT_API_SECRET` | yes | — | Shared secret (matches `WEBUI_API_SECRET`) |
-| `LDAP_SERVER_URI` | no | — | LDAP server URI |
-| `LDAP_BIND_DN` | no | — | LDAP bind DN |
-| `LDAP_BIND_PASSWORD` | no | — | LDAP bind password |
-| `LDAP_USER_SEARCH_BASE` | no | — | LDAP user search base DN |
-| `LDAP_ADMIN_GROUP_DN` | no | — | LDAP group DN whose members get `BotAdmin` |
+| `KEYCLOAK_REALM_URL` | no | `https://id.ca-hd.de/realms/collegium` | Keycloak realm URL |
+| `OIDC_RP_CLIENT_ID` | no | `postbot` | Keycloak client ID |
+| `OIDC_RP_CLIENT_SECRET` | yes | — | Keycloak client secret |
+| `LDAP_ADMIN_GROUP_DN` | no | — | Group DN whose members get `BotAdmin` (matched by `cn`) |

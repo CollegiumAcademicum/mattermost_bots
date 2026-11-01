@@ -5,11 +5,11 @@ description = "Mattermost broadcast web interface"
 requires-python = ">=3.14"
 dependencies = [
     "django>=4.2",
-    "django-auth-ldap>=4.8",
     "requests>=2.33",
     "gunicorn>=22.0",
     "python-dotenv>=1.0",
     "whitenoise>=6.0",
+    "mozilla-django-oidc>=5.0.2",
 ]
 
 [dependency-groups]

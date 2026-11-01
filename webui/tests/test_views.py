@@ -82,7 +82,7 @@ class ComposeViewTest(TestCase):
     def test_get_requires_login(self):
         self.client.logout()
         resp = self.client.get(reverse("broadcast:compose"))
-        self.assertRedirects(resp, "/login/?next=/broadcast/")
+        self.assertRedirects(resp, "/login/?next=/broadcast/", fetch_redirect_response=False)
 
 
 class ConfirmViewTest(TestCase):

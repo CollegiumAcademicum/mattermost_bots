@@ -39,6 +39,7 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "mozilla_django_oidc.middleware.SessionRefresh",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
@@ -81,52 +82,38 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 LOGIN_URL = "/login/"
 LOGIN_REDIRECT_URL = "/broadcast/"
-LOGOUT_REDIRECT_URL = "/login/"
+LOGOUT_REDIRECT_URL = "/logged-out/"
+LOGIN_REDIRECT_URL_FAILURE = "/login/failed/"
 
-# LDAP — configured via environment variables.
-try:
-    import ldap
-    from django_auth_ldap.config import LDAPSearch
+# Login: Keycloak (OIDC), which federates the FreeIPA directory. Endpoints are
+# the realm's standard Keycloak paths (see /.well-known/openid-configuration).
+KEYCLOAK_REALM_URL = os.environ.get(
+    "KEYCLOAK_REALM_URL", "https://id.ca-hd.de/realms/collegium"
+).rstrip("/")
+_oidc = f"{KEYCLOAK_REALM_URL}/protocol/openid-connect"
+OIDC_OP_AUTHORIZATION_ENDPOINT = f"{_oidc}/auth"
+OIDC_OP_TOKEN_ENDPOINT = f"{_oidc}/token"
+OIDC_OP_USER_ENDPOINT = f"{_oidc}/userinfo"
+OIDC_OP_JWKS_ENDPOINT = f"{_oidc}/certs"
+OIDC_OP_LOGOUT_ENDPOINT = f"{_oidc}/logout"
+OIDC_OP_LOGOUT_URL_METHOD = "broadcast.auth.keycloak_logout_url"
+OIDC_RP_CLIENT_ID = os.environ.get("OIDC_RP_CLIENT_ID", "postbot")
+OIDC_RP_CLIENT_SECRET = os.environ.get("OIDC_RP_CLIENT_SECRET", "")
+OIDC_RP_SIGN_ALGO = "RS256"
+OIDC_RP_SCOPES = "openid email profile"
+OIDC_USE_PKCE = True
+OIDC_STORE_ID_TOKEN = True  # id_token_hint for Keycloak logout
+# SessionRefresh (MIDDLEWARE): after this long, the next page load silently
+# re-checks with Keycloak, re-syncing BotAdmins; refused -> logged out.
+OIDC_RENEW_ID_TOKEN_EXPIRY_SECONDS = 15 * 60
 
-    AUTH_LDAP_SERVER_URI = os.environ.get("LDAP_SERVER_URI", "ldap://localhost")
-    AUTH_LDAP_BIND_DN = os.environ.get("LDAP_BIND_DN", "")
-    AUTH_LDAP_BIND_PASSWORD = os.environ.get("LDAP_BIND_PASSWORD", "")
-    AUTH_LDAP_USER_SEARCH = LDAPSearch(
-        os.environ.get("LDAP_USER_SEARCH_BASE", "dc=example,dc=com"),
-        ldap.SCOPE_SUBTREE,
-        "(uid=%(user)s)",
-    )
-    AUTH_LDAP_USER_ATTR_MAP = {
-        "first_name": "givenName",
-        "last_name": "sn",
-        "email": "mail",
-    }
+# ModelBackend: local password accounts, usable through /admin/ only.
+AUTHENTICATION_BACKENDS = [
+    "broadcast.auth.KeycloakOIDCBackend",
+    "django.contrib.auth.backends.ModelBackend",
+]
 
-    # OPT_REFERRALS=0 is required for FreeIPA (prevents chasing referrals).
-    AUTH_LDAP_GLOBAL_OPTIONS = {ldap.OPT_REFERRALS: 0}
-    _ca_cert = os.environ.get("LDAP_CA_CERT_PATH", "")
-    if _ca_cert:
-        try:
-            # Probe whether OPT_X_TLS_CACERTFILE is supported (fails on macOS).
-            ldap.set_option(ldap.OPT_X_TLS_CACERTFILE, _ca_cert)
-            AUTH_LDAP_GLOBAL_OPTIONS[ldap.OPT_X_TLS_CACERTFILE] = _ca_cert
-            AUTH_LDAP_GLOBAL_OPTIONS[ldap.OPT_X_TLS_REQUIRE_CERT] = ldap.OPT_X_TLS_DEMAND
-        except ValueError:
-            # macOS Secure Transport: cert pinning not supported via python-ldap.
-            # Disable verification so TLS still works (dev only).
-            AUTH_LDAP_GLOBAL_OPTIONS[ldap.OPT_X_TLS_REQUIRE_CERT] = ldap.OPT_X_TLS_NEVER
-            AUTH_LDAP_GLOBAL_OPTIONS[ldap.OPT_X_TLS_NEWCTX] = 0
-
-    AUTHENTICATION_BACKENDS = [
-        "broadcast.auth.CustomLDAPBackend",
-        "django.contrib.auth.backends.ModelBackend",
-    ]
-except ImportError:
-    AUTHENTICATION_BACKENDS = [
-        "django.contrib.auth.backends.ModelBackend",
-    ]
-
-# DN of the LDAP group whose members become "BotAdmins" in Django.
+# DN of the group whose members become "BotAdmins" in Django (matched by cn).
 LDAP_ADMIN_GROUP_DN = os.environ.get("LDAP_ADMIN_GROUP_DN", "")
 
 # postbot HTTP API
