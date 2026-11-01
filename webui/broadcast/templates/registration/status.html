@@ -1,0 +1,45 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Anmelden — Collegium Academicum</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'broadcast/ca.css' %}">
+</head>
+<body>
+
+<nav class="ca-navbar">
+  <a class="ca-navbar-logo" href="https://collegiumacademicum.de">
+    <img src="https://collegiumacademicum.de/img/logo-small.png" alt="Collegium Academicum">
+  </a>
+</nav>
+
+<div class="ca-main ca-login-wrap">
+  <div class="ca-login-logo">
+    <img src="https://collegiumacademicum.de/img/logo.png" alt="Collegium Academicum">
+  </div>
+
+  <div class="ca-login-card">
+    <div class="ca-login-title">Postbot-Webinterface</div>
+    <div class="ca-message {{ status_class }}">{{ status_message }}</div>
+    <a class="ca-button" href="/login/" style="display:block;text-align:center;text-decoration:none;">{{ action_label }}</a>
+  </div>
+</div>
+
+<footer class="ca-footer">
+  <div class="ca-footer-logo">
+    <img src="https://collegiumacademicum.de/img/logo-small.png" alt="Collegium Academicum">
+  </div>
+  <span class="ca-footer-email">kontakt@collegiumacademicum.de</span>
+  <div class="ca-footer-links">
+    <a href="https://collegiumacademicum.de/impressum" target="_blank">Impressum</a>
+    <a href="https://collegiumacademicum.de/datenschutz" target="_blank">Datenschutz</a>
+    <a href="https://collegiumacademicum.de/kontakt" target="_blank">Kontakt</a>
+  </div>
+</footer>
+
+</body>
+</html>

@@ -17,12 +17,10 @@ services:
     environment:
       - DJANGO_SECRET_KEY
       - ALLOWED_HOSTS
-      - LDAP_SERVER_URI
-      - LDAP_BIND_DN
-      - LDAP_BIND_PASSWORD
-      - LDAP_USER_SEARCH_BASE
+      - KEYCLOAK_REALM_URL
+      - OIDC_RP_CLIENT_ID
+      - OIDC_RP_CLIENT_SECRET
       - LDAP_ADMIN_GROUP_DN
-      - LDAP_CA_CERT_PATH
       - POSTBOT_API_URL=http://postbot:8000
       - POSTBOT_API_SECRET=${WEBUI_API_SECRET}
     ports:
