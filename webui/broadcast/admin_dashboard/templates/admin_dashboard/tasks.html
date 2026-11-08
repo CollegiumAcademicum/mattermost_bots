@@ -53,7 +53,7 @@
             <span id="edit-{{ task.name }}" style="display:none;">
               <input type="text" id="cron-input-{{ task.name }}"
                      value="{{ task.schedule|default:'' }}"
-                     style="font-family:monospace;padding:3px 6px;border:1px solid #35ADA4;border-radius:3px;width:110px;font-size:0.85rem;" />
+                     style="font-family:monospace;padding:3px 6px;border:1px solid #35ADA4;border-radius:3px;min-width:110px;field-sizing:content;max-width:100%;font-size:0.85rem;" />
               <button onclick="handleSave('{{ task.name|escapejs }}')"
                       style="background:#35ADA4;color:#fff;border:none;padding:3px 10px;border-radius:3px;cursor:pointer;font-size:0.85rem;margin-left:4px;">Speichern</button>
               <button onclick="closeEdit('{{ task.name|escapejs }}')"
@@ -105,10 +105,12 @@
 
 <script>
 function isValidCron(expr) {
-  const fields = expr.trim().split(/\s+/);
-  if (fields.length !== 5) return false;
+  // Several expressions may be separated by ";" — each must be valid.
   const f = /^(\*|\d+(-\d+)?(\/\d+)?|\*(\/\d+)?|\d+(,\d+)*)$/;
-  return fields.every(field => f.test(field));
+  return expr.split(';').every(part => {
+    const fields = part.trim().split(/\s+/);
+    return fields.length === 5 && fields.every(field => f.test(field));
+  });
 }
 
 function openEdit(name, currentCron) {
@@ -139,7 +141,7 @@ function handleSave(name) {
   }
 
   if (!isValidCron(cron)) {
-    errEl.textContent = 'Ungültiger Cron-Ausdruck (5 Felder erwartet, z.B. "0 9 * * 1").';
+    errEl.textContent = 'Ungültiger Cron-Ausdruck (5 Felder erwartet, z.B. "0 9 * * 1"; mehrere mit ";" trennen).';
     errEl.style.display = '';
     return;
   }
