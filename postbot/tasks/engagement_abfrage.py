@@ -18,6 +18,7 @@ CHANNELS = [
     "5usgkdso6b8r8m7ep8hr6pgkoy",  # ~VERW:Belegium
     "6o69ht478jd93e8g6g5dufu7gh",  # ~WIR:Schlichtungsausschuss
     "78fre8n3cffqij7fo7ekq7gu3a",  # ~TUN:Fahrrad
+    "bnxf6on9fb8zdq3ynmr9rqejmr",  # ~VERW:Altbaubelegium
 ]
 
 MESSAGE = r"""(english version below)
