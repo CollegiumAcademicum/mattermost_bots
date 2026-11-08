@@ -129,15 +129,19 @@ def load_schedule(path: Path) -> dict[str, str]:
 def is_due(cron_expr: str, last_run: datetime | None, now: datetime) -> bool:
     """Return True if *cron_expr* fires between *last_run* and *now*.
 
+    *cron_expr* may hold several expressions separated by ``;`` — the task is
+    due if any of them fires (e.g. ``"0 9 5 2,5,8,11 *; 0 9 22 3,6,9 *"``).
+
     If *last_run* is None (task never ran), uses a 60-second look-back window
     so the task fires on the first scheduler tick that matches the schedule.
     """
     if now.tzinfo is None:
         now = now.replace(tzinfo=timezone.utc)
     start = last_run if last_run is not None else now - timedelta(seconds=60)
-    cron = croniter(cron_expr, start)
-    next_run = cron.get_next(datetime)
-    return next_run <= now
+    return any(
+        croniter(expr.strip(), start).get_next(datetime) <= now
+        for expr in cron_expr.split(";")
+    )
 
 
 async def _fire_task(
