@@ -482,3 +482,10 @@ def test_handle_run_failing_task_reports_error():
 
     assert any("❌" in p for p in posted)
     assert any("exploded" in p for p in posted)
+
+
+def test_is_due_multiple_expressions_fires_if_any_matches():
+    cron = "0 9 5 2,5,8,11 *; 0 9 22 3,6,9 *; 0 9 1 1 *"
+    last = datetime(2026, 9, 21, 9, 0, 0, tzinfo=timezone.utc)
+    assert is_due(cron, last, datetime(2026, 9, 22, 9, 0, 30, tzinfo=timezone.utc))
+    assert not is_due(cron, last, datetime(2026, 9, 21, 9, 30, 0, tzinfo=timezone.utc))

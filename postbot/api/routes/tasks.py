@@ -61,7 +61,7 @@ def set_task_schedule(name: str, payload: SchedulePayload) -> dict:
         raise HTTPException(status_code=404, detail=f"Task {name!r} not found.")
 
     if payload.cron is not None:
-        if not croniter.is_valid(payload.cron):
+        if not all(croniter.is_valid(e.strip()) for e in payload.cron.split(";")):
             raise HTTPException(
                 status_code=422,
                 detail=f"Invalid cron expression: {payload.cron!r}",
