@@ -1,4 +1,4 @@
-"""Tests for task plugins: kuendigung_reminder and instandhaltung variants."""
+"""Tests for task plugins: kuendigung_erinnerung and instandhaltung variants."""
 
 from __future__ import annotations
 
@@ -50,11 +50,11 @@ def _make_xlsx(rows: list[list]) -> bytes:
     return buf.getvalue()
 
 
-# ── kuendigung_reminder ───────────────────────────────────────────────────────
+# ── kuendigung_erinnerung ───────────────────────────────────────────────────────
 
 class TestKuendigungReminder:
     def setup_method(self):
-        self.kr = _load("kuendigung_reminder")
+        self.kr = _load("kuendigung_erinnerung")
 
     def test_quarters_cover_all_four(self):
         assert set(self.kr._QUARTERS.keys()) == {1, 2, 3, 4}

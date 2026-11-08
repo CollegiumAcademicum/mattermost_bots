@@ -220,6 +220,8 @@ class PostBot(BaseBot):
             if src.name.startswith("__"):
                 continue
             dst = tasks_dir / src.name
+            if dst.exists() and dst.samefile(src):
+                continue  # tasks_dir is the bundled dir (local run from postbot/)
             shutil.copy2(src, dst)
             logger.info(f"Synced bundled task {src.name!r} → {dst}.")
 
