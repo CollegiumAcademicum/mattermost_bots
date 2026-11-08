@@ -463,6 +463,7 @@ class TestSeedDataFiles:
             token="test-token",
             team_name="test-team",
             db_path=tmp_path / "test.db",
+            tasks_dir=tmp_path / "tasks",
         )
         defaults.update(config_overrides)
         with patch("mmbot_framework.core.driver.DriverFactory.create", return_value=MagicMock()):
@@ -538,6 +539,17 @@ class TestSeedDataFiles:
 
         assert channels_target.exists()
         assert scheduler_target.exists()
+
+    def test_tasks_dir_same_as_bundled_dir(self, tmp_path):
+        """No SameFileError when tasks_dir is the bundled tasks directory."""
+        bot = self._make_bot(
+            tmp_path,
+            channels_toml_path=tmp_path / "channels.toml",
+            scheduler_toml_path=tmp_path / "scheduler.toml",
+            tasks_dir=Path(__file__).parent.parent / "tasks",
+        )
+
+        bot._seed_data_files()
 
     def test_raises_if_bundled_template_missing(self, tmp_path, monkeypatch):
         """FileNotFoundError with a clear message if the bundled template is absent."""
